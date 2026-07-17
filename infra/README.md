@@ -11,7 +11,8 @@ with `-var aws_region=...`).
 | DynamoDB tables | `aws_dynamodb_table.users`, `.logs` | `WaterBotUsers`, `WaterBotLogs` (on-demand) |
 | Lambda functions | `aws_lambda_function.webhook`, `.cron` | same image, different `image_config.command` |
 | Function URL | `aws_lambda_function_url.webhook` | public; auth is the Telegram secret-token header |
-| Daily schedule | `aws_scheduler_schedule.daily_reminder` | EventBridge Scheduler, timezone-aware |
+| Check tick | `aws_scheduler_schedule.tick` | EventBridge Scheduler, `rate(1 minute)`; handler prompts only users currently due |
+| Lambda log groups | `aws_cloudwatch_log_group.webhook`, `.cron` | bounded retention, torn down with the stack |
 | Lambda exec role | `aws_iam_role.lambda_exec` | scoped to the two tables + the two SSM params |
 | CI user | `aws_iam_user.github_ci` | `github-cli` — ECR push + Lambda update only; its access key is mounted as Actions secrets |
 | SSM parameters | `aws_ssm_parameter.bot_token`, `.webhook_secret` | SecureStrings; token value from git-ignored `terraform.tfvars`, secret generated |

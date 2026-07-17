@@ -1,4 +1,5 @@
-# --- Daily reminder: EventBridge Scheduler (supports timezones) ---------------
+# --- Check tick: EventBridge Scheduler fires the cron Lambda every minute; ----
+# the handler prompts only the users whose per-user frequency is currently due.
 
 resource "aws_iam_role" "scheduler" {
   name = "telegram_water_bot_scheduler_role"
@@ -25,15 +26,14 @@ resource "aws_iam_role_policy" "scheduler_invoke" {
   })
 }
 
-resource "aws_scheduler_schedule" "daily_reminder" {
-  name = "water_bot_daily_reminder"
+resource "aws_scheduler_schedule" "tick" {
+  name = "water_bot_tick"
 
   flexible_time_window {
     mode = "OFF"
   }
 
-  schedule_expression          = var.reminder_schedule
-  schedule_expression_timezone = var.bot_timezone
+  schedule_expression = var.tick_schedule
 
   target {
     arn      = aws_lambda_function.cron.arn

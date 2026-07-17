@@ -11,7 +11,6 @@ keywords = ["telegram", "telegram-bot", "aws-lambda", "serverless", "dynamodb"]
 dependencies = [
     "python-telegram-bot>=21.10,<22",
     "boto3>=1.35,<2",
-    "tzdata>=2025.1",  # zoneinfo data; not provided by the OS on Windows
 ]
 
 [dependency-groups]
@@ -47,6 +46,9 @@ select = [
     "SIM",  # flake8-simplify
     "RUF",  # ruff-specific
 ]
+# The bot's user-facing strings are Ukrainian; Cyrillic letters that resemble
+# Latin ones (і/Н/а/…) are intentional, so silence the ambiguous-unicode rules.
+ignore = ["RUF001", "RUF002", "RUF003"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["chatcheck_bot"]

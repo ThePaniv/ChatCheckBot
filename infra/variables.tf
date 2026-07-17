@@ -22,16 +22,16 @@ variable "image_tag" {
   default     = "latest"
 }
 
-variable "bot_timezone" {
-  description = "IANA timezone for daily reminders and date bucketing (must match the BOT_TZ the code uses)"
+variable "tick_schedule" {
+  description = "EventBridge Scheduler expression for the check tick. Must be fine enough to serve the shortest user frequency (the 1-minute test option)."
   type        = string
-  default     = "UTC"
+  default     = "rate(1 minute)"
 }
 
-variable "reminder_schedule" {
-  description = "Cron expression for the daily reminder, evaluated in bot_timezone"
-  type        = string
-  default     = "cron(0 20 * * ? *)"
+variable "log_retention_days" {
+  description = "CloudWatch Logs retention for the Lambda log groups"
+  type        = number
+  default     = 14
 }
 
 variable "bot_token_param" {

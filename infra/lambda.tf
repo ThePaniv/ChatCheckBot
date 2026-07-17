@@ -1,17 +1,19 @@
 # --- Lambda functions (same image, different entry handlers) ------------------
 
 locals {
+  webhook_function_name = "water_bot_webhook"
+  cron_function_name    = "water_bot_cron"
+
   lambda_env = {
     USERS_TABLE          = aws_dynamodb_table.users.name
     LOGS_TABLE           = aws_dynamodb_table.logs.name
     BOT_TOKEN_PARAM      = var.bot_token_param
     WEBHOOK_SECRET_PARAM = var.webhook_secret_param
-    BOT_TZ               = var.bot_timezone
   }
 }
 
 resource "aws_lambda_function" "webhook" {
-  function_name = "water_bot_webhook"
+  function_name = local.webhook_function_name
   role          = aws_iam_role.lambda_exec.arn
   package_type  = "Image"
   image_uri     = "${aws_ecr_repository.bot.repository_url}:${var.image_tag}"
@@ -25,10 +27,21 @@ resource "aws_lambda_function" "webhook" {
   environment {
     variables = local.lambda_env
   }
+
+  # CI (deploy.yml) owns the running image via update-function-code with a
+  # commit-pinned tag; Terraform only seeds it at creation. Ignore image_uri so
+  # a later infra-only apply doesn't roll the function back to :latest.
+  lifecycle {
+    ignore_changes = [image_uri]
+  }
+
+  # Own the log group (with retention) before Lambda auto-creates an
+  # unmanaged, never-expiring one.
+  depends_on = [aws_cloudwatch_log_group.webhook]
 }
 
 resource "aws_lambda_function" "cron" {
-  function_name = "water_bot_cron"
+  function_name = local.cron_function_name
   role          = aws_iam_role.lambda_exec.arn
   package_type  = "Image"
   image_uri     = "${aws_ecr_repository.bot.repository_url}:${var.image_tag}"
@@ -42,6 +55,12 @@ resource "aws_lambda_function" "cron" {
   environment {
     variables = local.lambda_env
   }
+
+  lifecycle {
+    ignore_changes = [image_uri]
+  }
+
+  depends_on = [aws_cloudwatch_log_group.cron]
 }
 
 # --- Webhook ingress: Lambda Function URL (free, no API Gateway needed) -------

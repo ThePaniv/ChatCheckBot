@@ -4,14 +4,18 @@ Guidance for working in this repository.
 
 ## What this is
 
-**ChatCheckBot** — a serverless Telegram bot ("Water Bot") that registers users via
-contact sharing and tracks daily water intake (`yes` / `no` / `ignored`). Two pathways,
-both served by the **same Docker image** with different Lambda entry handlers:
+**ChatCheckBot** — a Ukrainian-language serverless Telegram bot ("Water Bot") that
+registers users via contact sharing and reminds them to drink water at a **per-user
+cadence** they pick (1 min test / 3h / 12h / 24h), logging each answer `yes` / `no` /
+`ignored`. Two pathways, both served by the **same Docker image** with different Lambda
+entry handlers:
 
 1. **Webhook** (`chatcheck_bot.bot.webhook_handler`): Telegram → Lambda Function URL —
-   handles `/start`, contact registration, and Yes/No button taps.
-2. **Daily cron** (`chatcheck_bot.bot.cron_handler`): EventBridge Scheduler → marks
-   *yesterday* `ignored` for anyone who never answered, then sends today's prompt.
+   handles `/start`, contact registration, `/frequency`, the frequency picker, and the
+   Так/Ні answer taps.
+2. **Tick** (`chatcheck_bot.bot.cron_handler`): EventBridge Scheduler fires it every
+   minute; it prompts only users whose `next_check_at <= now`, closes an unanswered
+   previous prompt as `ignored`, then advances `next_check_at` by that user's frequency.
 
 ## Tech stack
 
@@ -32,8 +36,8 @@ docker build -t chatcheck-bot .                       # build the Lambda image
 
 | File | Role |
 |---|---|
-| `bot.py` | PTB `Application`, both Lambda handlers, one persistent event loop |
-| `database.py` | `WaterBotDB`: DynamoDB access (users + daily logs) |
+| `bot.py` | PTB `Application`, Ukrainian text, `FREQUENCIES`, both Lambda handlers (`webhook_handler` + the `cron_handler` tick), one persistent event loop |
+| `database.py` | `WaterBotDB`: DynamoDB access — frequency/scheduling on users, per-check logs |
 
 `tests/` mocks all AWS calls (no network, no credentials needed).
 
@@ -41,7 +45,8 @@ docker build -t chatcheck-bot .                       # build the Lambda image
 
 - `ruff` formatted, line length 100, target `py313`.
 - Config is **env-driven only** (`USERS_TABLE`, `LOGS_TABLE`, `BOT_TOKEN_PARAM`,
-  `WEBHOOK_SECRET_PARAM`, `BOT_TZ`); secrets live in **SSM SecureStrings**, never in code.
+  `WEBHOOK_SECRET_PARAM`); secrets live in **SSM SecureStrings**, never in code.
+- All user-facing strings are **Ukrainian** (informal «ти»). Keep them in `bot.py`.
 - `chatcheck_bot.bot` does AWS work (SSM fetch, DB client) **at import time** on
   purpose — that's the Lambda init phase. Tests stub `boto3` before importing it.
 
@@ -53,12 +58,16 @@ docker build -t chatcheck-bot .                       # build the Lambda image
   the Function URL is public.
 - **Always return HTTP 200** from the webhook handler, even on processing errors —
   a non-200 makes Telegram retry the same update and a poison message wedges the queue.
-- **Callback data carries the date** (`water:yes:2026-07-17`) so answers after midnight
-  land on the day the question was asked. Don't recompute the date server-side.
+- **Callback data carries the `check_id`** (`water:yes:1752777300`, epoch seconds) so a
+  late tap is logged against the right prompt. Answer callbacks match `^water:(yes|no):\d+$`;
+  frequency callbacks match `^freq:\d+$`. Keep callback_data ≤ 64 bytes (Telegram limit).
+- **Per-user scheduling:** `next_check_at` (epoch) decides when a user is due; the tick runs
+  every minute and must stay fine enough for the shortest frequency (60s). `pending_check`
+  holds the id of the still-unanswered prompt; it's logged `ignored` when superseded and
+  cleared on answer (conditionally, so a late answer can't wipe a newer pending one).
 - **One persistent event loop** per Lambda execution environment; never switch back to
   `asyncio.run()` per request (it binds PTB's HTTP client to a dead loop on warm starts).
-- The cron only backfills `ignored` for users registered before yesterday, so new users
-  don't get a phantom entry. Users who block the bot are deactivated, not deleted.
+- Users who block the bot are deactivated (`active=false`), not deleted.
 
 ## Deployment
 

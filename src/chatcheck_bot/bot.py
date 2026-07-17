@@ -4,8 +4,7 @@ import hmac
 import json
 import logging
 import os
-from datetime import datetime, timedelta
-from zoneinfo import ZoneInfo
+import time
 
 import boto3
 from telegram import (
@@ -13,7 +12,6 @@ from telegram import (
     InlineKeyboardMarkup,
     KeyboardButton,
     ReplyKeyboardMarkup,
-    ReplyKeyboardRemove,
     Update,
 )
 from telegram.error import Forbidden
@@ -31,8 +29,6 @@ from chatcheck_bot.database import WaterBotDB
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-BOT_TZ = ZoneInfo(os.getenv("BOT_TZ", "UTC"))
-
 db = WaterBotDB()
 
 _ssm = boto3.client("ssm")
@@ -45,15 +41,49 @@ def _get_parameter(name: str) -> str:
 TOKEN = _get_parameter(os.getenv("BOT_TOKEN_PARAM", "/telegram/bot_token"))
 WEBHOOK_SECRET = _get_parameter(os.getenv("WEBHOOK_SECRET_PARAM", "/telegram/webhook_secret"))
 
+# Check-in cadences the user can pick, keyed by interval in seconds. Each value
+# is (button label, phrase for the confirmation message). The 1-minute option
+# exists only for testing the flow end to end.
+FREQUENCIES = {
+    60: ("1 хвилина (тест)", "щохвилини"),
+    3 * 3600: ("Кожні 3 години", "кожні 3 години"),
+    12 * 3600: ("Кожні 12 годин", "кожні 12 годин"),
+    24 * 3600: ("Кожні 24 години", "кожні 24 години"),
+}
+
+PROMPT_TEXT = "Ти вже випив(-ла) достатньо води? 💧"
+
+# Persistent options panel shown once onboarding completes. Tapping a button
+# sends its label as a normal text message, routed below to the matching
+# handler. The label doubles as the routing key, so it lives in one constant
+# referenced by both the markup and the MessageHandler.
+BTN_FREQUENCY = "⏰ Змінити частоту"
+
+MAIN_MENU = ReplyKeyboardMarkup(
+    [[KeyboardButton(BTN_FREQUENCY)]],
+    resize_keyboard=True,
+    is_persistent=True,
+)
+
+
+def _frequency_keyboard() -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(
+        [
+            [InlineKeyboardButton(label, callback_data=f"freq:{seconds}")]
+            for seconds, (label, _) in FREQUENCIES.items()
+        ]
+    )
+
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     contact_keyboard = ReplyKeyboardMarkup(
-        [[KeyboardButton(text="Share Contact to Register", request_contact=True)]],
+        [[KeyboardButton(text="Поділитися контактом", request_contact=True)]],
         one_time_keyboard=True,
         resize_keyboard=True,
     )
     await update.message.reply_text(
-        "Welcome to the Water Bot! Please share your contact info to finish registration.",
+        "Привіт! Я нагадуватиму тобі пити воду. 💧\n\n"
+        "Поділися своїм контактом, щоб завершити реєстрацію.",
         reply_markup=contact_keyboard,
     )
 
@@ -63,7 +93,9 @@ async def handle_contact(update: Update, context: ContextTypes.DEFAULT_TYPE):
     sender = update.message.from_user
     # A user can forward someone else's contact card; only accept their own.
     if contact.user_id != sender.id:
-        await update.message.reply_text("Please share your own contact using the button below.")
+        await update.message.reply_text(
+            "Будь ласка, поділися своїм власним контактом за допомогою кнопки нижче."
+        )
         return
     db.register_user(
         user_id=sender.id,
@@ -71,33 +103,58 @@ async def handle_contact(update: Update, context: ContextTypes.DEFAULT_TYPE):
         phone=contact.phone_number,
         first_name=contact.first_name or sender.first_name or "",
     )
+    await update.message.reply_text("Реєстрацію завершено! ✅", reply_markup=MAIN_MENU)
+    await update.message.reply_text("Як часто тобі нагадувати?", reply_markup=_frequency_keyboard())
+
+
+async def frequency_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
-        "Registration successful! I'll check in with you daily.",
-        reply_markup=ReplyKeyboardRemove(),
+        "Обери, як часто нагадувати:", reply_markup=_frequency_keyboard()
     )
+
+
+async def handle_frequency_choice(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+    seconds = int(query.data.split(":")[1])
+    choice = FREQUENCIES.get(seconds)
+    if choice is None:
+        return  # stale/retired button; the tap is already acknowledged
+    _, phrase = choice
+    # Schedule the first prompt one interval out (so the 1-minute test fires
+    # within a minute, and a daily user isn't pinged the instant they choose).
+    next_check_at = int(time.time()) + seconds
+    if db.set_frequency(query.from_user.id, seconds, next_check_at):
+        await query.edit_message_text(f"Готово! Тепер нагадуватиму {phrase}. 💧")
+    else:
+        # No registered row to update (never shared a contact) — guide them.
+        await query.edit_message_text(
+            "Спершу надішли /start і поділися контактом, щоб я міг тобі писати. 🙏"
+        )
 
 
 async def handle_water_response(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
-    # callback_data carries the date the question was asked about, so answers
-    # sent after midnight still land on the correct day.
-    _, status, date_str = query.data.split(":")
-    db.log_water(query.from_user.id, date_str, status)
+    # callback_data carries the id of the prompt being answered, so a late tap
+    # is logged against the right check even after newer prompts were sent.
+    _, status, check_id = query.data.split(":")
+    db.answer_check(query.from_user.id, check_id, status)
     reply = (
-        f"Logged for {date_str}: you drank water. Nice!"
+        "Занотовано: води достатньо. Так тримати! 💪"
         if status == "yes"
-        else f"Logged for {date_str}: no water. Tomorrow is a new day!"
+        else "Занотовано. Саме час випити склянку води! 🥤"
     )
     await query.edit_message_text(text=reply)
 
 
 app = Application.builder().token(TOKEN).updater(None).build()
 app.add_handler(CommandHandler("start", start))
+app.add_handler(CommandHandler("frequency", frequency_command))
 app.add_handler(MessageHandler(filters.CONTACT, handle_contact))
-app.add_handler(
-    CallbackQueryHandler(handle_water_response, pattern=r"^water:(yes|no):\d{4}-\d{2}-\d{2}$")
-)
+app.add_handler(MessageHandler(filters.Text([BTN_FREQUENCY]), frequency_command))
+app.add_handler(CallbackQueryHandler(handle_frequency_choice, pattern=r"^freq:\d+$"))
+app.add_handler(CallbackQueryHandler(handle_water_response, pattern=r"^water:(yes|no):\d+$"))
 
 # One persistent event loop per Lambda execution environment. The Application
 # is initialized once and reused across warm invocations; re-running
@@ -139,42 +196,48 @@ def webhook_handler(event, context):
     return {"statusCode": 200, "body": "OK"}
 
 
-async def _broadcast():
+async def _tick():
     await _ensure_initialized()
-    now = datetime.now(BOT_TZ)
-    today_str = now.strftime("%Y-%m-%d")
-    yesterday_str = (now - timedelta(days=1)).strftime("%Y-%m-%d")
-    keyboard = InlineKeyboardMarkup(
-        [
-            [
-                InlineKeyboardButton("Yes", callback_data=f"water:yes:{today_str}"),
-                InlineKeyboardButton("No", callback_data=f"water:no:{today_str}"),
-            ]
-        ]
-    )
-    users = db.get_active_users()
-    logger.info("Broadcasting to %d users", len(users))
+    now = int(time.time())
+    users = db.get_due_users(now)
+    logger.info("Tick: %d users due", len(users))
     for user in users:
         user_id = user["user_id"]
-        chat_id = int(user["chat_id"])
-        # Close out yesterday's prompt as ignored if it was never answered.
-        # Skip users registered today, who never received it.
-        registered_date = str(user.get("registered_at", ""))[:10]
-        if registered_date <= yesterday_str and not db.check_log_exists(user_id, yesterday_str):
-            db.log_water(user_id, yesterday_str, "ignored")
+        chat_id = user.get("chat_id")
+        if chat_id is None:
+            # A malformed row (e.g. a frequency somehow set before registration)
+            # would crash int() below; skip it rather than wedge the whole tick.
+            logger.warning("Due user %s has no chat_id; skipping", user_id)
+            continue
+        chat_id = int(chat_id)
+        frequency = int(user["frequency_seconds"])
+        # Close out the previous prompt as ignored if it was never answered.
+        pending = user.get("pending_check")
+        if pending:
+            db.log_check(user_id, str(pending), "ignored")
+        check_id = str(now)
+        keyboard = InlineKeyboardMarkup(
+            [
+                [
+                    InlineKeyboardButton("Так 👍", callback_data=f"water:yes:{check_id}"),
+                    InlineKeyboardButton("Ні 👎", callback_data=f"water:no:{check_id}"),
+                ]
+            ]
+        )
         try:
-            await app.bot.send_message(
-                chat_id=chat_id,
-                text="Did you drink enough water today?",
-                reply_markup=keyboard,
-            )
+            await app.bot.send_message(chat_id=chat_id, text=PROMPT_TEXT, reply_markup=keyboard)
+            # Advance the schedule only after a confirmed send, inside the same
+            # try: if this write fails the user stays due and is retried next
+            # tick (at worst a duplicate), never silently dropped mid-batch.
+            db.mark_sent(user_id, check_id, now + frequency)
         except Forbidden:
             logger.info("User %s blocked the bot; deactivating", user_id)
             db.deactivate_user(user_id)
         except Exception:
-            logger.exception("Failed to message user %s", user_id)
+            # Leave next_check_at due so this user is retried on the next tick.
+            logger.exception("Failed to process user %s", user_id)
 
 
 def cron_handler(event, context):
-    _loop.run_until_complete(_broadcast())
-    return {"statusCode": 200, "body": "Broadcast complete"}
+    _loop.run_until_complete(_tick())
+    return {"statusCode": 200, "body": "OK"}
