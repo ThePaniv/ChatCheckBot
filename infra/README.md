@@ -1,6 +1,6 @@
 # infra/ — Terraform for ChatCheckBot's AWS resources
 
-Infrastructure-as-code for the whole serverless stack in `us-east-1` (override
+Infrastructure-as-code for the whole serverless stack in `eu-central-1` (override
 with `-var aws_region=...`).
 
 ## What's managed here

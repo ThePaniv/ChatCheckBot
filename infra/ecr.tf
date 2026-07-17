@@ -4,4 +4,9 @@
 
 resource "aws_ecr_repository" "bot" {
   name = var.ecr_repo_name
+
+  # The image is rebuilt from source on every deploy, so a teardown that also
+  # clears the stored images (rather than erroring on a non-empty repo) is the
+  # behavior we want.
+  force_delete = true
 }

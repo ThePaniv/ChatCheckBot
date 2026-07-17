@@ -53,7 +53,7 @@ terraform apply -target=aws_ecr_repository.bot
 cd ..
 
 ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
-REGION=us-east-1
+REGION=eu-central-1
 REPO=$ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com/chatcheck-bot
 
 aws ecr get-login-password --region $REGION | docker login --username AWS --password-stdin $REPO
