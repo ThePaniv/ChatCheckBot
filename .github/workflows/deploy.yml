@@ -1,0 +1,90 @@
+name: Deploy to Lambda
+
+# Lints + tests, then builds the image, pushes it to ECR, and points both
+# Lambda functions (webhook + cron) at the new image. Runs on every push to
+# `develop` (i.e. every merge) and can also be run manually. The deploy only
+# happens if lint + tests pass.
+#
+# No GitHub secrets: AWS is reached via OIDC role assumption.
+on:
+  push:
+    branches: [develop]
+  workflow_dispatch:
+
+permissions:
+  id-token: write # assume the AWS role via GitHub OIDC
+  contents: read
+
+# Never run two deploys at once; queue a newer push behind an in-progress one.
+concurrency:
+  group: deploy-lambda
+  cancel-in-progress: false
+
+env:
+  AWS_REGION: us-east-1
+  ECR_REPOSITORY: chatcheck-bot
+  # An ARN is not a secret: it only grants access to principals the role's trust
+  # policy allows (GitHub OIDC from this repo's develop ref).
+  DEPLOY_ROLE_ARN: arn:aws:iam::126568927381:role/github-actions-chatcheck-deploy
+
+jobs:
+  # Gate: never deploy code that doesn't lint and pass tests.
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.11.25"
+          enable-cache: true
+      - name: Install dependencies
+        run: uv sync --locked --dev
+      - name: Lint (ruff)
+        run: |
+          uv run ruff check .
+          uv run ruff format --check .
+      - name: Test (pytest)
+        run: uv run pytest
+
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ env.DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Log in to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build, tag, and push image
+        id: build
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          IMAGE="$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
+          docker build --platform linux/amd64 \
+            -t "$IMAGE" -t "$ECR_REGISTRY/$ECR_REPOSITORY:latest" .
+          docker push "$IMAGE"
+          docker push "$ECR_REGISTRY/$ECR_REPOSITORY:latest"
+          # Pass the immutable, commit-pinned URI to later steps.
+          echo "image=$IMAGE" >> "$GITHUB_OUTPUT"
+
+      - name: Roll both Lambdas to the new image
+        env:
+          IMAGE: ${{ steps.build.outputs.image }}
+        run: |
+          set -euo pipefail
+          for fn in water_bot_webhook water_bot_cron; do
+            aws lambda update-function-code --function-name "$fn" --image-uri "$IMAGE"
+          done
+          for fn in water_bot_webhook water_bot_cron; do
+            aws lambda wait function-updated --function-name "$fn"
+          done

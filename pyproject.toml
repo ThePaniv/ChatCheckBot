@@ -1,0 +1,56 @@
+[project]
+name = "chatcheck-bot"
+version = "1.0.0"
+description = "Serverless Telegram bot on AWS Lambda that registers users via contact sharing and tracks daily water intake."
+readme = "README.md"
+requires-python = ">=3.13"
+license = "MIT"
+authors = [{ name = "Andrii Pankiv" }]
+keywords = ["telegram", "telegram-bot", "aws-lambda", "serverless", "dynamodb"]
+
+dependencies = [
+    "python-telegram-bot>=21.10,<22",
+    "boto3>=1.35,<2",
+    "tzdata>=2025.1",  # zoneinfo data; not provided by the OS on Windows
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3",
+    "ruff>=0.12",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/chatcheck_bot"]
+
+[tool.uv]
+package = true
+
+[tool.ruff]
+target-version = "py313"
+line-length = 100
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = [
+    "E",    # pycodestyle errors
+    "W",    # pycodestyle warnings
+    "F",    # pyflakes
+    "I",    # isort
+    "UP",   # pyupgrade
+    "B",    # flake8-bugbear
+    "C4",   # flake8-comprehensions
+    "SIM",  # flake8-simplify
+    "RUF",  # ruff-specific
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["chatcheck_bot"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"

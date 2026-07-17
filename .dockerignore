@@ -1,0 +1,17 @@
+# Never bake local env/secrets or state into the image.
+.env
+.env.*
+!.env.example
+
+.git/
+.github/
+.claude/
+infra/
+tests/
+.venv/
+__pycache__/
+.pytest_cache/
+.ruff_cache/
+*.md
+.dockerignore
+Dockerfile

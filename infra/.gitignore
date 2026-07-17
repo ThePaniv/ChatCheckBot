@@ -1,0 +1,16 @@
+# Local Terraform state can contain sensitive values — never commit it.
+*.tfstate
+*.tfstate.*
+.terraform/
+.terraform.tfstate.lock.info
+
+# Local var overrides (may hold secrets).
+*.tfvars
+*.auto.tfvars
+override.tf
+override.tf.json
+
+crash.log
+crash.*.log
+
+# Keep .terraform.lock.hcl committed (provider version pinning).
