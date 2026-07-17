@@ -14,7 +14,14 @@ output "webhook_secret" {
   sensitive   = true
 }
 
-output "deploy_role_arn" {
-  description = "Role the GitHub Actions deploy workflow assumes (hardcode in deploy.yml)"
-  value       = aws_iam_role.deploy.arn
+output "github_ci_access_key_id" {
+  description = "Mount as the AWS_ACCESS_KEY_ID Actions secret"
+  value       = aws_iam_access_key.github_ci.id
+  sensitive   = true
+}
+
+output "github_ci_secret_access_key" {
+  description = "Mount as the AWS_SECRET_ACCESS_KEY Actions secret"
+  value       = aws_iam_access_key.github_ci.secret
+  sensitive   = true
 }

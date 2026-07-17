@@ -27,7 +27,7 @@ CI ([.github/workflows/ci.yml](.github/workflows/ci.yml)) runs the same lint + t
 
 ## Deployment
 
-Continuous: every push/merge to `develop` triggers [deploy.yml](.github/workflows/deploy.yml) — lint + test, build the image, push it to ECR (commit-SHA + `latest` tags), and roll both Lambdas to the new image. AWS is reached via GitHub OIDC (role `github-actions-chatcheck-deploy`, managed in [infra/](infra/)) — no long-lived keys, no GitHub secrets.
+Continuous: every push/merge to `develop` triggers [deploy.yml](.github/workflows/deploy.yml) — lint + test, build the image, push it to ECR (commit-SHA + `latest` tags), and roll both Lambdas to the new image. AWS is reached with the dedicated `github-cli` IAM user (least-privilege: ECR push + Lambda update only), whose Terraform-generated access key is mounted as the `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` Actions secrets.
 
 First-time bootstrap is manual:
 

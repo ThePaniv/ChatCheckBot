@@ -68,9 +68,11 @@ gated on that passing), builds the image, pushes it to ECR (`chatcheck-bot`, com
 `latest` tags), then `aws lambda update-function-code` on both functions.
 ([ci.yml](.github/workflows/ci.yml) runs the same lint+test on pull requests.)
 
-**No GitHub secrets.** AWS is reached by assuming `github-actions-chatcheck-deploy` via
-GitHub OIDC (the role ARN is hardcoded in the workflow — an ARN isn't sensitive; the
-trust policy only allows this repo's `develop` ref).
+AWS is reached with the **`github-cli` IAM user's** access key, mounted as the
+`AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` Actions secrets. The user, its
+least-privilege policies (ECR push + Lambda update only), and the key are all managed in
+[infra/github-user.tf](infra/github-user.tf); rotate with
+`terraform apply -replace=aws_iam_access_key.github_ci` and re-set the two secrets.
 
 Manual deploy steps (first bootstrap included): see [README.md](README.md).
 
@@ -78,13 +80,12 @@ Manual deploy steps (first bootstrap included): see [README.md](README.md).
 
 Everything AWS lives in [infra/](infra/): ECR repo, DynamoDB tables, both Lambdas +
 Function URL, EventBridge schedule, the Lambda exec role (scoped to the two tables and
-two SSM params), and the OIDC deploy role. Run Terraform from `infra/`. Notes:
+two SSM params), and the `github-cli` CI user. Run Terraform from `infra/`
+(AWS profile `claude` = IAM user `claude-cli`). Notes:
 
 - **State is local and git-ignored** — don't commit `*.tfstate` or `.terraform/`.
 - **Secret *values* never go in committed code** — the Telegram token lives in
   `infra/terraform.tfvars` (git-ignored) and the webhook secret is a `random_password`;
   both end up in local state only. The repo is public — treat any committed string as leaked.
-- The account-wide GitHub OIDC **provider** is owned by VuDrochkaBot's Terraform and
-  referenced here via a data source — don't create a second one.
 - First apply bootstraps in two steps (ECR repo → push image → full apply); see
   [infra/README.md](infra/README.md).

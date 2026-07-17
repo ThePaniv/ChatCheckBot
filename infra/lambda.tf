@@ -59,3 +59,17 @@ resource "aws_lambda_permission" "public_url" {
   principal              = "*"
   function_url_auth_type = "NONE"
 }
+
+# Since October 2025 AWS additionally requires lambda:InvokeFunction in the
+# resource policy for public (auth NONE) function URLs — without it every
+# request gets a 403 from the URL front door. The AddPermission API only
+# allows the scoping lambda:InvokedViaFunctionUrl condition via a parameter
+# this provider version doesn't expose (hashicorp/terraform-provider-aws#44829),
+# so the grant is unconditioned; that's acceptable because the handler
+# authenticates every request itself via the Telegram secret-token header.
+resource "aws_lambda_permission" "public_url_invoke" {
+  statement_id  = "AllowPublicFunctionUrlInvoke"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.webhook.function_name
+  principal     = "*"
+}

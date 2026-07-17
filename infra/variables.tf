@@ -52,14 +52,3 @@ variable "telegram_bot_token" {
   sensitive   = true
 }
 
-variable "github_repo" {
-  description = "GitHub repository (owner/name) allowed to assume the deploy role via OIDC"
-  type        = string
-  default     = "ThePaniv/ChatCheckBot"
-}
-
-variable "deploy_ref_branches" {
-  description = "Branches whose pushes may assume the deploy role"
-  type        = list(string)
-  default     = ["develop"]
-}

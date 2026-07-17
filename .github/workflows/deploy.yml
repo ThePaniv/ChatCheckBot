@@ -5,14 +5,15 @@ name: Deploy to Lambda
 # `develop` (i.e. every merge) and can also be run manually. The deploy only
 # happens if lint + tests pass.
 #
-# No GitHub secrets: AWS is reached via OIDC role assumption.
+# AWS is reached with the `github-cli` IAM user's access key, mounted as the
+# AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY Actions secrets (both managed by
+# Terraform in infra/github-user.tf).
 on:
   push:
     branches: [develop]
   workflow_dispatch:
 
 permissions:
-  id-token: write # assume the AWS role via GitHub OIDC
   contents: read
 
 # Never run two deploys at once; queue a newer push behind an in-progress one.
@@ -23,9 +24,6 @@ concurrency:
 env:
   AWS_REGION: us-east-1
   ECR_REPOSITORY: chatcheck-bot
-  # An ARN is not a secret: it only grants access to principals the role's trust
-  # policy allows (GitHub OIDC from this repo's develop ref).
-  DEPLOY_ROLE_ARN: arn:aws:iam::126568927381:role/github-actions-chatcheck-deploy
 
 jobs:
   # Gate: never deploy code that doesn't lint and pass tests.
@@ -53,10 +51,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Configure AWS credentials (OIDC)
+      - name: Configure AWS credentials (github-cli IAM user)
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: ${{ env.DEPLOY_ROLE_ARN }}
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Log in to Amazon ECR
@@ -70,7 +69,9 @@ jobs:
           IMAGE_TAG: ${{ github.sha }}
         run: |
           IMAGE="$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
-          docker build --platform linux/amd64 \
+          # Lambda rejects OCI image indexes, so keep the push a single
+          # manifest: no provenance/SBOM attestations.
+          docker build --platform linux/amd64 --provenance=false --sbom=false \
             -t "$IMAGE" -t "$ECR_REGISTRY/$ECR_REPOSITORY:latest" .
           docker push "$IMAGE"
           docker push "$ECR_REGISTRY/$ECR_REPOSITORY:latest"
