@@ -58,8 +58,9 @@ docker build -t chatcheck-bot .                       # build the Lambda image
   the Function URL is public.
 - **Always return HTTP 200** from the webhook handler, even on processing errors —
   a non-200 makes Telegram retry the same update and a poison message wedges the queue.
-- **Callback data carries the `check_id`** (`water:yes:1752777300`, epoch seconds) so a
-  late tap is logged against the right prompt. Answer callbacks match `^water:(yes|no):\d+$`;
+- **Callback data carries the `checked_at`** (`water:yes:1752777300`, epoch seconds) so a
+  late tap is logged against the right prompt. It's also the `WaterBotLogs` sort key and the
+  row's only timestamp (no separate `updated_at`). Answer callbacks match `^water:(yes|no):\d+$`;
   frequency callbacks match `^freq:\d+$`. Keep callback_data ≤ 64 bytes (Telegram limit).
 - **Per-user scheduling:** `next_check_at` (epoch) decides when a user is due; the tick runs
   every minute and must stay fine enough for the shortest frequency (60s). `pending_check`

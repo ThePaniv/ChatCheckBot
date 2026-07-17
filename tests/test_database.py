@@ -79,13 +79,15 @@ def test_mark_sent_sets_pending_and_next_check():
     assert kwargs["ExpressionAttributeValues"] == {":c": "1752777300", ":n": 1752788100}
 
 
-def test_log_check_uses_check_id_sort_key():
+def test_log_check_uses_checked_at_sort_key_and_no_duplicate_timestamp():
     db, _, logs_table = _make_db()
     db.log_check(7, "1752777300", "yes")
     item = logs_table.put_item.call_args.kwargs["Item"]
     assert item["user_id"] == "7"
-    assert item["check_id"] == "1752777300"
+    assert item["checked_at"] == "1752777300"
     assert item["status"] == "yes"
+    # checked_at is the only timestamp — no redundant updated_at.
+    assert "updated_at" not in item
 
 
 def test_answer_check_logs_then_clears_matching_pending():

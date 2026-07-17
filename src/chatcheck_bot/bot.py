@@ -136,10 +136,10 @@ async def handle_frequency_choice(update: Update, context: ContextTypes.DEFAULT_
 async def handle_water_response(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
-    # callback_data carries the id of the prompt being answered, so a late tap
-    # is logged against the right check even after newer prompts were sent.
-    _, status, check_id = query.data.split(":")
-    db.answer_check(query.from_user.id, check_id, status)
+    # callback_data carries the checked_at of the prompt being answered, so a
+    # late tap is logged against the right check even after newer prompts went out.
+    _, status, checked_at = query.data.split(":")
+    db.answer_check(query.from_user.id, checked_at, status)
     reply = (
         "Занотовано: води достатньо. Так тримати! 💪"
         if status == "yes"
@@ -215,12 +215,12 @@ async def _tick():
         pending = user.get("pending_check")
         if pending:
             db.log_check(user_id, str(pending), "ignored")
-        check_id = str(now)
+        checked_at = str(now)
         keyboard = InlineKeyboardMarkup(
             [
                 [
-                    InlineKeyboardButton("Так 👍", callback_data=f"water:yes:{check_id}"),
-                    InlineKeyboardButton("Ні 👎", callback_data=f"water:no:{check_id}"),
+                    InlineKeyboardButton("Так 👍", callback_data=f"water:yes:{checked_at}"),
+                    InlineKeyboardButton("Ні 👎", callback_data=f"water:no:{checked_at}"),
                 ]
             ]
         )
@@ -229,7 +229,7 @@ async def _tick():
             # Advance the schedule only after a confirmed send, inside the same
             # try: if this write fails the user stays due and is retried next
             # tick (at worst a duplicate), never silently dropped mid-batch.
-            db.mark_sent(user_id, check_id, now + frequency)
+            db.mark_sent(user_id, checked_at, now + frequency)
         except Forbidden:
             logger.info("User %s blocked the bot; deactivating", user_id)
             db.deactivate_user(user_id)

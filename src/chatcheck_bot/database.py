@@ -77,12 +77,12 @@ class WaterBotDB:
                 return users
             scan_kwargs["ExclusiveStartKey"] = last_key
 
-    def mark_sent(self, user_id, check_id, next_check_at):
+    def mark_sent(self, user_id, checked_at, next_check_at):
         self.users_table.update_item(
             Key={"user_id": str(user_id)},
             UpdateExpression="SET pending_check = :c, next_check_at = :n",
             ExpressionAttributeValues={
-                ":c": str(check_id),
+                ":c": str(checked_at),
                 ":n": int(next_check_at),
             },
         )
@@ -94,25 +94,27 @@ class WaterBotDB:
             ExpressionAttributeValues={":inactive": False},
         )
 
-    def log_check(self, user_id, check_id, status):
+    def log_check(self, user_id, checked_at, status):
+        # checked_at (epoch seconds, when the prompt was sent) is the sort key
+        # and doubles as the answer callback's token — it's the row's single
+        # timestamp, so there's no separate updated_at.
         self.logs_table.put_item(
             Item={
                 "user_id": str(user_id),
-                "check_id": str(check_id),
+                "checked_at": str(checked_at),
                 "status": status,
-                "updated_at": _now_iso(),
             }
         )
 
-    def answer_check(self, user_id, check_id, status):
-        self.log_check(user_id, check_id, status)
+    def answer_check(self, user_id, checked_at, status):
+        self.log_check(user_id, checked_at, status)
         # Clear the pending marker only if it still points at this check, so a
         # late answer to a superseded prompt doesn't wipe a newer pending one.
         try:
             self.users_table.update_item(
                 Key={"user_id": str(user_id)},
                 UpdateExpression="REMOVE pending_check",
-                ConditionExpression=Attr("pending_check").eq(str(check_id)),
+                ConditionExpression=Attr("pending_check").eq(str(checked_at)),
             )
         except ClientError as err:
             if err.response["Error"]["Code"] != "ConditionalCheckFailedException":
