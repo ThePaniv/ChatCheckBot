@@ -33,18 +33,14 @@ First-time bootstrap is manual:
 
 Prerequisites: AWS CLI (authenticated), Docker, Terraform ≥ 1.6.
 
-### 1. Store secrets in SSM
+### 1. Provide the bot token
 
-```bash
-aws ssm put-parameter --name /telegram/bot_token \
-  --type SecureString --value "<YOUR_BOT_TOKEN>"
+Terraform creates both SSM SecureString parameters itself: the bot token comes from a **git-ignored** `infra/terraform.tfvars`, and the webhook secret is generated (`random_password`). Create the tfvars file:
 
-# Any random string; Telegram will echo it back on every webhook call.
-aws ssm put-parameter --name /telegram/webhook_secret \
-  --type SecureString --value "$(openssl rand -hex 32)"
+```hcl
+# infra/terraform.tfvars — never commit this file
+telegram_bot_token = "<YOUR_BOT_TOKEN>"
 ```
-
-(PowerShell alternative for the secret: `-join ((1..64) | ForEach-Object { '{0:x}' -f (Get-Random -Max 16) })`)
 
 ### 2. Create the ECR repo, build, and push
 
@@ -77,9 +73,10 @@ Set `bot_timezone` (e.g. `-var bot_timezone=Europe/Kyiv`) to control both the re
 ### 4. Register the webhook with Telegram
 
 ```bash
+cd infra
 curl -X POST "https://api.telegram.org/bot<YOUR_BOT_TOKEN>/setWebhook" \
-  -d "url=<WEBHOOK_URL_OUTPUT>" \
-  -d "secret_token=<YOUR_WEBHOOK_SECRET>" \
+  -d "url=$(terraform output -raw webhook_url)" \
+  -d "secret_token=$(terraform output -raw webhook_secret)" \
   -d 'allowed_updates=["message","callback_query"]'
 ```
 

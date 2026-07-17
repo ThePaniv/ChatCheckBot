@@ -35,15 +35,21 @@ variable "reminder_schedule" {
 }
 
 variable "bot_token_param" {
-  description = "SSM SecureString parameter name holding the Telegram bot token (create manually before apply)"
+  description = "SSM SecureString parameter name holding the Telegram bot token"
   type        = string
   default     = "/telegram/bot_token"
 }
 
 variable "webhook_secret_param" {
-  description = "SSM SecureString parameter name holding the webhook secret token (create manually before apply)"
+  description = "SSM SecureString parameter name holding the webhook secret token"
   type        = string
   default     = "/telegram/webhook_secret"
+}
+
+variable "telegram_bot_token" {
+  description = "Telegram bot token from @BotFather. Set it in terraform.tfvars (git-ignored) — never commit it."
+  type        = string
+  sensitive   = true
 }
 
 variable "github_repo" {

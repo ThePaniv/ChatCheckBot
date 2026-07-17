@@ -14,11 +14,13 @@ with `-var aws_region=...`).
 | Daily schedule | `aws_scheduler_schedule.daily_reminder` | EventBridge Scheduler, timezone-aware |
 | Lambda exec role | `aws_iam_role.lambda_exec` | scoped to the two tables + the two SSM params |
 | Deploy role | `aws_iam_role.deploy` | `github-actions-chatcheck-deploy`, trust scoped to this repo's `develop` |
+| SSM parameters | `aws_ssm_parameter.bot_token`, `.webhook_secret` | SecureStrings; token value from git-ignored `terraform.tfvars`, secret generated |
 
-**Not managed here:** the SSM SecureString *values* (`/telegram/bot_token`,
-`/telegram/webhook_secret` — create them out-of-band before applying, see the
-root README) and the account-wide GitHub OIDC provider (owned by
+**Not managed here:** the account-wide GitHub OIDC provider (owned by
 VuDrochkaBot's Terraform; referenced via a data source).
+
+**Secrets:** the Telegram token lives only in `terraform.tfvars` and the local
+state file — both git-ignored. Never commit either.
 
 ## Prerequisites
 
@@ -29,6 +31,7 @@ VuDrochkaBot's Terraform; referenced via a data source).
 
 ```bash
 cd infra
+echo 'telegram_bot_token = "<YOUR_BOT_TOKEN>"' > terraform.tfvars
 terraform init
 
 # First run only — the Lambdas need an image to exist:

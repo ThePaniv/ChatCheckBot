@@ -7,8 +7,8 @@ data "aws_kms_alias" "ssm" {
 
 locals {
   ssm_param_arns = [
-    "arn:aws:ssm:${var.aws_region}:${data.aws_caller_identity.current.account_id}:parameter${var.bot_token_param}",
-    "arn:aws:ssm:${var.aws_region}:${data.aws_caller_identity.current.account_id}:parameter${var.webhook_secret_param}",
+    aws_ssm_parameter.bot_token.arn,
+    aws_ssm_parameter.webhook_secret.arn,
   ]
 }
 

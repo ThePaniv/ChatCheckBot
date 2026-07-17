@@ -28,18 +28,6 @@ uv run pytest                                         # tests (AWS is mocked; no
 docker build -t chatcheck-bot .                       # build the Lambda image
 ```
 
-### Local dev caveat (Windows)
-
-On the maintainer's machine, Windows Application Control can block
-`.venv\Scripts\python.exe` (`os error 4551`), so `uv run` / `pytest` may fail locally.
-Lint still works (`ruff` is a native binary: `uvx ruff check .`). To run/verify
-**Python**, use Docker:
-
-```bash
-docker run --rm -e UV_PROJECT_ENVIRONMENT=/opt/venv -v "$PWD:/app" -w /app \
-  ghcr.io/astral-sh/uv:python3.13-trixie-slim uv run --dev --locked pytest
-```
-
 ## Architecture (`src/chatcheck_bot/`)
 
 | File | Role |
@@ -93,8 +81,9 @@ Function URL, EventBridge schedule, the Lambda exec role (scoped to the two tabl
 two SSM params), and the OIDC deploy role. Run Terraform from `infra/`. Notes:
 
 - **State is local and git-ignored** — don't commit `*.tfstate` or `.terraform/`.
-- **Secret *values* are not in Terraform** — the two SSM SecureStrings are created
-  out-of-band; TF only references their names.
+- **Secret *values* never go in committed code** — the Telegram token lives in
+  `infra/terraform.tfvars` (git-ignored) and the webhook secret is a `random_password`;
+  both end up in local state only. The repo is public — treat any committed string as leaked.
 - The account-wide GitHub OIDC **provider** is owned by VuDrochkaBot's Terraform and
   referenced here via a data source — don't create a second one.
 - First apply bootstraps in two steps (ECR repo → push image → full apply); see
