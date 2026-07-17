@@ -107,9 +107,11 @@ class WaterBotDB:
         )
 
     def answer_check(self, user_id, checked_at, status):
-        self.log_check(user_id, checked_at, status)
-        # Clear the pending marker only if it still points at this check, so a
-        # late answer to a superseded prompt doesn't wipe a newer pending one.
+        # Accept an answer only for the user's CURRENT open prompt. Gate on the
+        # pending marker first: if it no longer points at this check, the prompt
+        # was already superseded (logged `ignored`) or already answered, so the
+        # tap is a stale one — reject it rather than rewrite a closed check.
+        # Returns True if the answer was recorded, False if the check is closed.
         try:
             self.users_table.update_item(
                 Key={"user_id": str(user_id)},
@@ -117,5 +119,8 @@ class WaterBotDB:
                 ConditionExpression=Attr("pending_check").eq(str(checked_at)),
             )
         except ClientError as err:
-            if err.response["Error"]["Code"] != "ConditionalCheckFailedException":
-                raise
+            if err.response["Error"]["Code"] == "ConditionalCheckFailedException":
+                return False
+            raise
+        self.log_check(user_id, checked_at, status)
+        return True

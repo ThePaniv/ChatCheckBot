@@ -90,22 +90,28 @@ def test_log_check_uses_checked_at_sort_key_and_no_duplicate_timestamp():
     assert "updated_at" not in item
 
 
-def test_answer_check_logs_then_clears_matching_pending():
+def test_answer_check_records_only_the_live_prompt():
     db, users_table, logs_table = _make_db()
-    db.answer_check(7, "1752777300", "no")
-    logs_table.put_item.assert_called_once()
+    result = db.answer_check(7, "1752777300", "no")
+    assert result is True
+    # Gate on the pending marker first (must still point at this check)...
     upd = users_table.update_item.call_args.kwargs
     assert "REMOVE pending_check" in upd["UpdateExpression"]
-    assert upd["ConditionExpression"] is not None  # only clear if it's still this check
+    assert upd["ConditionExpression"] is not None
+    # ...then log the answer.
+    item = logs_table.put_item.call_args.kwargs["Item"]
+    assert item["checked_at"] == "1752777300"
+    assert item["status"] == "no"
 
 
-def test_answer_check_swallows_conditional_failure():
-    db, users_table, _ = _make_db()
+def test_answer_check_rejects_stale_or_ignored_check_without_logging():
+    db, users_table, logs_table = _make_db()
     users_table.update_item.side_effect = ClientError(
         {"Error": {"Code": "ConditionalCheckFailedException"}}, "UpdateItem"
     )
-    # A late answer to a superseded prompt must not raise.
-    db.answer_check(7, "old-check", "yes")
+    # A tap on an already-ignored/answered check: rejected, not logged, no crash.
+    assert db.answer_check(7, "old-check", "yes") is False
+    logs_table.put_item.assert_not_called()
 
 
 def test_answer_check_reraises_other_client_errors():

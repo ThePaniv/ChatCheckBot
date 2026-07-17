@@ -98,7 +98,7 @@ Lambda (1M req/mo), DynamoDB (25 GB), SSM standard parameters, EventBridge Sched
 
 - Users register, then pick a reminder frequency (or change it later with `/frequency`). Nobody is prompted until they've chosen one.
 - Users who block the bot are marked `active = false` and skipped on future ticks.
-- Each tick marks a user's previous prompt `ignored` only if it went unanswered before the next one is due, so there are no phantom entries.
+- Each tick marks a user's previous prompt `ignored` only if it went unanswered before the next one is due, so there are no phantom entries. Once a prompt is superseded (ignored) or answered it's **closed** — tapping its old buttons is rejected with a "no longer active" reply and never rewrites the record.
 - All webhook processing errors return HTTP 200 to Telegram (with the error logged to CloudWatch) so a poison update can't wedge the webhook queue with retries.
 
 ## License

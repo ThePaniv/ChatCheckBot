@@ -64,8 +64,10 @@ docker build -t chatcheck-bot .                       # build the Lambda image
   frequency callbacks match `^freq:\d+$`. Keep callback_data ≤ 64 bytes (Telegram limit).
 - **Per-user scheduling:** `next_check_at` (epoch) decides when a user is due; the tick runs
   every minute and must stay fine enough for the shortest frequency (60s). `pending_check`
-  holds the id of the still-unanswered prompt; it's logged `ignored` when superseded and
-  cleared on answer (conditionally, so a late answer can't wipe a newer pending one).
+  holds the id of the current open prompt; it's logged `ignored` when superseded by the next
+  tick. An answer is accepted **only** when it matches `pending_check` (conditional clear-then-log
+  in `answer_check`), so a tap on an already-ignored or already-answered check is rejected —
+  a closed check is never rewritten.
 - **One persistent event loop** per Lambda execution environment; never switch back to
   `asyncio.run()` per request (it binds PTB's HTTP client to a dead loop on warm starts).
 - Users who block the bot are deactivated (`active=false`), not deleted.

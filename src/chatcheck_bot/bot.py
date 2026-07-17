@@ -136,15 +136,18 @@ async def handle_frequency_choice(update: Update, context: ContextTypes.DEFAULT_
 async def handle_water_response(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
-    # callback_data carries the checked_at of the prompt being answered, so a
-    # late tap is logged against the right check even after newer prompts went out.
+    # callback_data carries the checked_at of the prompt being answered. Only
+    # the current open prompt is accepted; a tap on an already-ignored or
+    # already-answered check is rejected so it can't rewrite a closed check.
     _, status, checked_at = query.data.split(":")
-    db.answer_check(query.from_user.id, checked_at, status)
-    reply = (
-        "Занотовано: води достатньо. Так тримати! 💪"
-        if status == "yes"
-        else "Занотовано. Саме час випити склянку води! 🥤"
-    )
+    if db.answer_check(query.from_user.id, checked_at, status):
+        reply = (
+            "Занотовано: води достатньо. Так тримати! 💪"
+            if status == "yes"
+            else "Занотовано. Саме час випити склянку води! 🥤"
+        )
+    else:
+        reply = "Це нагадування вже застаріле — дочекайся наступного. ⏳"
     await query.edit_message_text(text=reply)
 
 
