@@ -86,26 +86,7 @@
               }
             ],
             "queryOptions": {},
-            "transformations": [
-              {
-                "kind": "organize",
-                "spec": {
-                  "id": "organize",
-                  "options": {
-                    "excludeByName": {},
-                    "includeByName": {},
-                    "indexByName": {
-                      "username": 0,
-                      "frequency_seconds": 1,
-                      "next_check_at": 2,
-                      "active": 3,
-                      "pending_check": 4
-                    },
-                    "renameByName": {}
-                  }
-                }
-              }
-            ]
+            "transformations": []
           }
         },
         "description": "",
@@ -827,25 +808,7 @@
               }
             ],
             "queryOptions": {},
-            "transformations": [
-              {
-                "kind": "organize",
-                "spec": {
-                  "id": "organize",
-                  "options": {
-                    "excludeByName": {},
-                    "includeByName": {},
-                    "indexByName": {
-                      "username": 0,
-                      "checked_at": 1,
-                      "status": 2,
-                      "latency_seconds": 3
-                    },
-                    "renameByName": {}
-                  }
-                }
-              }
-            ]
+            "transformations": []
           }
         },
         "description": "",
