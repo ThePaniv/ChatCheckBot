@@ -292,9 +292,8 @@
           "url_options": { "method": "GET", "data": "" },
           "root_selector": "",
           "columns": [
-            { "selector": "checked_at", "text": "checked_at", "type": "timestamp_epoch_s" },
-            { "selector": "first_name", "text": "first_name", "type": "string" },
             { "selector": "username", "text": "username", "type": "string" },
+            { "selector": "checked_at", "text": "checked_at", "type": "timestamp_epoch_s" },
             { "selector": "status", "text": "status", "type": "string" },
             { "selector": "latency_seconds", "text": "latency_seconds", "type": "number" }
           ]
@@ -383,11 +382,10 @@
           "url_options": { "method": "GET", "data": "" },
           "root_selector": "",
           "columns": [
-            { "selector": "first_name", "text": "first_name", "type": "string" },
             { "selector": "username", "text": "username", "type": "string" },
-            { "selector": "active", "text": "active", "type": "string" },
             { "selector": "frequency_seconds", "text": "frequency_seconds", "type": "number" },
             { "selector": "next_check_at", "text": "next_check_at", "type": "timestamp_epoch_s" },
+            { "selector": "active", "text": "active", "type": "string" },
             { "selector": "pending_check", "text": "pending_check", "type": "string" }
           ]
         }
