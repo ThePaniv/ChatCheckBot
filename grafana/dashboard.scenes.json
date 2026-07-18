@@ -73,7 +73,7 @@
                       "root_selector": "",
                       "source": "url",
                       "type": "json",
-                      "url": "${stats_url}?view=users",
+                      "url": "https://colozauq4va56unxug5yorssdu0umiov.lambda-url.eu-central-1.on.aws/?view=users",
                       "url_options": {
                         "data": "",
                         "method": "GET"
@@ -221,7 +221,7 @@
                       "root_selector": "",
                       "source": "url",
                       "type": "json",
-                      "url": "${stats_url}?view=summary",
+                      "url": "https://colozauq4va56unxug5yorssdu0umiov.lambda-url.eu-central-1.on.aws/?view=summary",
                       "url_options": {
                         "data": "",
                         "method": "GET"
@@ -324,7 +324,7 @@
                       "root_selector": "",
                       "source": "url",
                       "type": "json",
-                      "url": "${stats_url}?view=summary",
+                      "url": "https://colozauq4va56unxug5yorssdu0umiov.lambda-url.eu-central-1.on.aws/?view=summary",
                       "url_options": {
                         "data": "",
                         "method": "GET"
@@ -422,7 +422,7 @@
                       "root_selector": "",
                       "source": "url",
                       "type": "json",
-                      "url": "${stats_url}?view=summary",
+                      "url": "https://colozauq4va56unxug5yorssdu0umiov.lambda-url.eu-central-1.on.aws/?view=summary",
                       "url_options": {
                         "data": "",
                         "method": "GET"
@@ -520,7 +520,7 @@
                       "root_selector": "",
                       "source": "url",
                       "type": "json",
-                      "url": "${stats_url}?view=summary",
+                      "url": "https://colozauq4va56unxug5yorssdu0umiov.lambda-url.eu-central-1.on.aws/?view=summary",
                       "url_options": {
                         "data": "",
                         "method": "GET"
@@ -634,7 +634,7 @@
                       "root_selector": "",
                       "source": "url",
                       "type": "json",
-                      "url": "${stats_url}?view=summary",
+                      "url": "https://colozauq4va56unxug5yorssdu0umiov.lambda-url.eu-central-1.on.aws/?view=summary",
                       "url_options": {
                         "data": "",
                         "method": "GET"
@@ -795,7 +795,7 @@
                       "root_selector": "",
                       "source": "url",
                       "type": "json",
-                      "url": "${stats_url}?view=logs",
+                      "url": "https://colozauq4va56unxug5yorssdu0umiov.lambda-url.eu-central-1.on.aws/?view=logs",
                       "url_options": {
                         "data": "",
                         "method": "GET"
@@ -947,7 +947,7 @@
                       "root_selector": "",
                       "source": "url",
                       "type": "json",
-                      "url": "${stats_url}?view=logs",
+                      "url": "https://colozauq4va56unxug5yorssdu0umiov.lambda-url.eu-central-1.on.aws/?view=logs",
                       "url_options": {
                         "data": "",
                         "method": "GET"
@@ -1234,21 +1234,5 @@
     "to": "now"
   },
   "title": "Water Bot",
-  "variables": [
-    {
-      "kind": "TextVariable",
-      "spec": {
-        "current": {
-          "text": "https://colozauq4va56unxug5yorssdu0umiov.lambda-url.eu-central-1.on.aws/",
-          "value": "https://colozauq4va56unxug5yorssdu0umiov.lambda-url.eu-central-1.on.aws/"
-        },
-        "description": "Base URL of the stats Function URL (terraform output -raw stats_url). Include the trailing slash.",
-        "hide": "dontHide",
-        "label": "Stats base URL",
-        "name": "stats_url",
-        "query": "https://colozauq4va56unxug5yorssdu0umiov.lambda-url.eu-central-1.on.aws/",
-        "skipUrlSync": false
-      }
-    }
-  ]
+  "variables": []
 }
