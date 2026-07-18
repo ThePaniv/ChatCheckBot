@@ -1,0 +1,397 @@
+{
+  "__inputs": [
+    {
+      "name": "DS_INFINITY",
+      "label": "Infinity",
+      "description": "The Infinity datasource pointed at the bot's /stats endpoint (with the Authorization: Bearer <stats_token> header set on the datasource).",
+      "type": "datasource",
+      "pluginId": "yesoreyeraan-infinity-datasource",
+      "pluginName": "Infinity"
+    }
+  ],
+  "__requires": [
+    { "type": "grafana", "id": "grafana", "name": "Grafana", "version": "10.0.0" },
+    { "type": "datasource", "id": "yesoreyeraan-infinity-datasource", "name": "Infinity", "version": "2.0.0" },
+    { "type": "panel", "id": "stat", "name": "Stat", "version": "" },
+    { "type": "panel", "id": "piechart", "name": "Pie chart", "version": "" },
+    { "type": "panel", "id": "table", "name": "Table", "version": "" },
+    { "type": "panel", "id": "timeseries", "name": "Time series", "version": "" }
+  ],
+  "annotations": { "list": [] },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "links": [],
+  "liveNow": false,
+  "refresh": "5m",
+  "schemaVersion": 39,
+  "tags": ["chatcheckbot", "waterbot"],
+  "templating": {
+    "list": [
+      {
+        "name": "stats_url",
+        "label": "Stats base URL",
+        "description": "Base URL of the stats Function URL (terraform output -raw stats_url). Include the trailing slash.",
+        "type": "textbox",
+        "query": "https://YOUR-STATS-URL.lambda-url.eu-central-1.on.aws/",
+        "current": {
+          "text": "https://YOUR-STATS-URL.lambda-url.eu-central-1.on.aws/",
+          "value": "https://YOUR-STATS-URL.lambda-url.eu-central-1.on.aws/"
+        },
+        "hide": 0,
+        "skipUrlSync": false
+      }
+    ]
+  },
+  "time": { "from": "now-30d", "to": "now" },
+  "timepicker": {},
+  "timezone": "",
+  "title": "Water Bot",
+  "uid": "waterbot-stats",
+  "version": 1,
+  "weekStart": "",
+  "panels": [
+    {
+      "type": "row",
+      "title": "Overview",
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
+      "id": 1,
+      "panels": []
+    },
+    {
+      "type": "stat",
+      "title": "Users",
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 1 },
+      "id": 2,
+      "datasource": { "type": "yesoreyeraan-infinity-datasource", "uid": "${DS_INFINITY}" },
+      "options": {
+        "reduceOptions": { "values": false, "calcs": ["lastNotNull"], "fields": "/^total_users$/" },
+        "orientation": "auto",
+        "textMode": "value",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto"
+      },
+      "fieldConfig": { "defaults": { "color": { "mode": "fixed", "fixedColor": "blue" } }, "overrides": [] },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "yesoreyeraan-infinity-datasource", "uid": "${DS_INFINITY}" },
+          "type": "json",
+          "source": "url",
+          "parser": "backend",
+          "format": "table",
+          "url": "${stats_url}?view=summary",
+          "url_options": { "method": "GET", "data": "" },
+          "root_selector": "",
+          "columns": [
+            { "selector": "total_users", "text": "total_users", "type": "number" },
+            { "selector": "active_users", "text": "active_users", "type": "number" }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "stat",
+      "title": "Active users",
+      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 1 },
+      "id": 3,
+      "datasource": { "type": "yesoreyeraan-infinity-datasource", "uid": "${DS_INFINITY}" },
+      "options": {
+        "reduceOptions": { "values": false, "calcs": ["lastNotNull"], "fields": "/^active_users$/" },
+        "orientation": "auto",
+        "textMode": "value",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto"
+      },
+      "fieldConfig": { "defaults": { "color": { "mode": "fixed", "fixedColor": "green" } }, "overrides": [] },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "yesoreyeraan-infinity-datasource", "uid": "${DS_INFINITY}" },
+          "type": "json",
+          "source": "url",
+          "parser": "backend",
+          "format": "table",
+          "url": "${stats_url}?view=summary",
+          "url_options": { "method": "GET", "data": "" },
+          "root_selector": "",
+          "columns": [
+            { "selector": "total_users", "text": "total_users", "type": "number" },
+            { "selector": "active_users", "text": "active_users", "type": "number" }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "stat",
+      "title": "Total checks",
+      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 1 },
+      "id": 4,
+      "datasource": { "type": "yesoreyeraan-infinity-datasource", "uid": "${DS_INFINITY}" },
+      "options": {
+        "reduceOptions": { "values": false, "calcs": ["lastNotNull"], "fields": "/^total_checks$/" },
+        "orientation": "auto",
+        "textMode": "value",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto"
+      },
+      "fieldConfig": { "defaults": { "color": { "mode": "fixed", "fixedColor": "purple" } }, "overrides": [] },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "yesoreyeraan-infinity-datasource", "uid": "${DS_INFINITY}" },
+          "type": "json",
+          "source": "url",
+          "parser": "backend",
+          "format": "table",
+          "url": "${stats_url}?view=summary",
+          "url_options": { "method": "GET", "data": "" },
+          "root_selector": "",
+          "columns": [
+            { "selector": "total_checks", "text": "total_checks", "type": "number" }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "stat",
+      "title": "Response rate",
+      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 1 },
+      "id": 5,
+      "datasource": { "type": "yesoreyeraan-infinity-datasource", "uid": "${DS_INFINITY}" },
+      "options": {
+        "reduceOptions": { "values": false, "calcs": ["lastNotNull"], "fields": "/^response_rate$/" },
+        "orientation": "auto",
+        "textMode": "value",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "min": 0,
+          "max": 1,
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "orange", "value": 0.5 },
+              { "color": "green", "value": 0.8 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "yesoreyeraan-infinity-datasource", "uid": "${DS_INFINITY}" },
+          "type": "json",
+          "source": "url",
+          "parser": "backend",
+          "format": "table",
+          "url": "${stats_url}?view=summary",
+          "url_options": { "method": "GET", "data": "" },
+          "root_selector": "",
+          "columns": [
+            { "selector": "response_rate", "text": "response_rate", "type": "number" }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "row",
+      "title": "Activity",
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 5 },
+      "id": 6,
+      "panels": []
+    },
+    {
+      "type": "piechart",
+      "title": "Answer breakdown",
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 6 },
+      "id": 7,
+      "datasource": { "type": "yesoreyeraan-infinity-datasource", "uid": "${DS_INFINITY}" },
+      "options": {
+        "reduceOptions": { "values": false, "calcs": ["lastNotNull"], "fields": "/^(yes|no|ignored)$/" },
+        "pieType": "donut",
+        "tooltip": { "mode": "single", "sort": "none" },
+        "legend": { "displayMode": "list", "placement": "right", "values": ["value"] }
+      },
+      "fieldConfig": {
+        "defaults": { "color": { "mode": "palette-classic" } },
+        "overrides": [
+          { "matcher": { "id": "byName", "options": "yes" }, "properties": [ { "id": "color", "value": { "mode": "fixed", "fixedColor": "green" } } ] },
+          { "matcher": { "id": "byName", "options": "no" }, "properties": [ { "id": "color", "value": { "mode": "fixed", "fixedColor": "orange" } } ] },
+          { "matcher": { "id": "byName", "options": "ignored" }, "properties": [ { "id": "color", "value": { "mode": "fixed", "fixedColor": "red" } } ] }
+        ]
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "yesoreyeraan-infinity-datasource", "uid": "${DS_INFINITY}" },
+          "type": "json",
+          "source": "url",
+          "parser": "backend",
+          "format": "table",
+          "url": "${stats_url}?view=summary",
+          "url_options": { "method": "GET", "data": "" },
+          "root_selector": "",
+          "columns": [
+            { "selector": "yes", "text": "yes", "type": "number" },
+            { "selector": "no", "text": "no", "type": "number" },
+            { "selector": "ignored", "text": "ignored", "type": "number" }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "table",
+      "title": "Recent checks",
+      "gridPos": { "h": 8, "w": 16, "x": 8, "y": 6 },
+      "id": 8,
+      "datasource": { "type": "yesoreyeraan-infinity-datasource", "uid": "${DS_INFINITY}" },
+      "options": {
+        "showHeader": true,
+        "sortBy": [ { "displayName": "checked_at", "desc": true } ]
+      },
+      "fieldConfig": {
+        "defaults": { "custom": { "align": "auto", "filterable": true } },
+        "overrides": [
+          { "matcher": { "id": "byName", "options": "latency_seconds" }, "properties": [ { "id": "unit", "value": "s" } ] },
+          {
+            "matcher": { "id": "byName", "options": "status" },
+            "properties": [
+              { "id": "custom.cellOptions", "value": { "type": "color-text" } },
+              {
+                "id": "mappings",
+                "value": [
+                  { "type": "value", "options": { "yes": { "color": "green", "index": 0 }, "no": { "color": "orange", "index": 1 }, "ignored": { "color": "red", "index": 2 } } }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "yesoreyeraan-infinity-datasource", "uid": "${DS_INFINITY}" },
+          "type": "json",
+          "source": "url",
+          "parser": "backend",
+          "format": "table",
+          "url": "${stats_url}?view=logs",
+          "url_options": { "method": "GET", "data": "" },
+          "root_selector": "",
+          "columns": [
+            { "selector": "checked_at", "text": "checked_at", "type": "timestamp_epoch_s" },
+            { "selector": "first_name", "text": "first_name", "type": "string" },
+            { "selector": "username", "text": "username", "type": "string" },
+            { "selector": "status", "text": "status", "type": "string" },
+            { "selector": "latency_seconds", "text": "latency_seconds", "type": "number" }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Answer latency over time (each point = one answered check)",
+      "gridPos": { "h": 7, "w": 24, "x": 0, "y": 14 },
+      "id": 9,
+      "datasource": { "type": "yesoreyeraan-infinity-datasource", "uid": "${DS_INFINITY}" },
+      "options": {
+        "tooltip": { "mode": "single", "sort": "none" },
+        "legend": { "displayMode": "list", "placement": "bottom", "calcs": [] }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "custom": {
+            "drawStyle": "points",
+            "pointSize": 6,
+            "showPoints": "always",
+            "lineWidth": 0,
+            "axisPlacement": "auto"
+          },
+          "color": { "mode": "fixed", "fixedColor": "blue" }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "yesoreyeraan-infinity-datasource", "uid": "${DS_INFINITY}" },
+          "type": "json",
+          "source": "url",
+          "parser": "backend",
+          "format": "table",
+          "url": "${stats_url}?view=logs",
+          "url_options": { "method": "GET", "data": "" },
+          "root_selector": "",
+          "columns": [
+            { "selector": "checked_at", "text": "checked_at", "type": "timestamp_epoch_s" },
+            { "selector": "latency_seconds", "text": "latency_seconds", "type": "number" }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "row",
+      "title": "Users",
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 21 },
+      "id": 10,
+      "panels": []
+    },
+    {
+      "type": "table",
+      "title": "Users",
+      "gridPos": { "h": 7, "w": 24, "x": 0, "y": 22 },
+      "id": 11,
+      "datasource": { "type": "yesoreyeraan-infinity-datasource", "uid": "${DS_INFINITY}" },
+      "options": { "showHeader": true, "sortBy": [ { "displayName": "next_check_at", "desc": false } ] },
+      "fieldConfig": {
+        "defaults": { "custom": { "align": "auto", "filterable": true } },
+        "overrides": [
+          { "matcher": { "id": "byName", "options": "frequency_seconds" }, "properties": [ { "id": "unit", "value": "s" } ] },
+          {
+            "matcher": { "id": "byName", "options": "active" },
+            "properties": [
+              { "id": "custom.cellOptions", "value": { "type": "color-text" } },
+              { "id": "mappings", "value": [ { "type": "value", "options": { "true": { "color": "green", "index": 0 }, "false": { "color": "red", "index": 1 } } } ] }
+            ]
+          }
+        ]
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "yesoreyeraan-infinity-datasource", "uid": "${DS_INFINITY}" },
+          "type": "json",
+          "source": "url",
+          "parser": "backend",
+          "format": "table",
+          "url": "${stats_url}?view=users",
+          "url_options": { "method": "GET", "data": "" },
+          "root_selector": "",
+          "columns": [
+            { "selector": "first_name", "text": "first_name", "type": "string" },
+            { "selector": "username", "text": "username", "type": "string" },
+            { "selector": "active", "text": "active", "type": "string" },
+            { "selector": "frequency_seconds", "text": "frequency_seconds", "type": "number" },
+            { "selector": "next_check_at", "text": "next_check_at", "type": "timestamp_epoch_s" },
+            { "selector": "pending_check", "text": "pending_check", "type": "string" }
+          ]
+        }
+      ]
+    }
+  ]
+}

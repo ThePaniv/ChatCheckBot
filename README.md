@@ -129,7 +129,11 @@ curl -H "Authorization: Bearer $STATS_TOKEN" "${STATS_URL}?view=summary"
    - A **Time series** off `logs`: set the time field to `checked_at` (format **Unix ns/s**
      → seconds), group/count by `status`.
    - A **Table** off `users` for the per-user list.
-4. **Share:** open the dashboard → **Share → Public dashboard** to get a link anyone can open.
+4. **Share:** with **signed-in members of your Grafana org** (Dashboard → **Share → Link**).
+   Avoid a *public* dashboard for the `logs`/`users` panels — see the warning below.
+
+Rather than building the panels by hand, import the ready-made dashboard in
+[grafana/dashboard.json](grafana/dashboard.json) — see [grafana/README.md](grafana/README.md).
 
 > ⚠️ A **public** dashboard makes whatever it displays world-readable. The `summary` view is
 > anonymized (counts only); the `logs`/`users` views include first names and usernames. Keep
