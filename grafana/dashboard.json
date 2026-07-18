@@ -10,14 +10,46 @@
     }
   ],
   "__requires": [
-    { "type": "grafana", "id": "grafana", "name": "Grafana", "version": "10.0.0" },
-    { "type": "datasource", "id": "yesoreyeram-infinity-datasource", "name": "Infinity", "version": "2.0.0" },
-    { "type": "panel", "id": "stat", "name": "Stat", "version": "" },
-    { "type": "panel", "id": "piechart", "name": "Pie chart", "version": "" },
-    { "type": "panel", "id": "table", "name": "Table", "version": "" },
-    { "type": "panel", "id": "timeseries", "name": "Time series", "version": "" }
+    {
+      "type": "grafana",
+      "id": "grafana",
+      "name": "Grafana",
+      "version": "10.0.0"
+    },
+    {
+      "type": "datasource",
+      "id": "yesoreyeram-infinity-datasource",
+      "name": "Infinity",
+      "version": "2.0.0"
+    },
+    {
+      "type": "panel",
+      "id": "stat",
+      "name": "Stat",
+      "version": ""
+    },
+    {
+      "type": "panel",
+      "id": "piechart",
+      "name": "Pie chart",
+      "version": ""
+    },
+    {
+      "type": "panel",
+      "id": "table",
+      "name": "Table",
+      "version": ""
+    },
+    {
+      "type": "panel",
+      "id": "timeseries",
+      "name": "Time series",
+      "version": ""
+    }
   ],
-  "annotations": { "list": [] },
+  "annotations": {
+    "list": []
+  },
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
@@ -25,7 +57,10 @@
   "liveNow": false,
   "refresh": "5m",
   "schemaVersion": 39,
-  "tags": ["chatcheckbot", "waterbot"],
+  "tags": [
+    "chatcheckbot",
+    "waterbot"
+  ],
   "templating": {
     "list": [
       {
@@ -43,7 +78,10 @@
       }
     ]
   },
-  "time": { "from": "now-30d", "to": "now" },
+  "time": {
+    "from": "now-30d",
+    "to": "now"
+  },
   "timepicker": {},
   "timezone": "",
   "title": "Water Bot",
@@ -55,39 +93,80 @@
       "type": "row",
       "title": "Overview",
       "collapsed": false,
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
       "id": 1,
       "panels": []
     },
     {
       "type": "stat",
       "title": "Users",
-      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 1 },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 0,
+        "y": 1
+      },
       "id": 2,
-      "datasource": { "type": "yesoreyeram-infinity-datasource", "uid": "${DS_INFINITY}" },
+      "datasource": {
+        "type": "yesoreyeram-infinity-datasource",
+        "uid": "${DS_INFINITY}"
+      },
       "options": {
-        "reduceOptions": { "values": false, "calcs": ["lastNotNull"], "fields": "/^total_users$/" },
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "/^total_users$/"
+        },
         "orientation": "auto",
         "textMode": "value",
         "colorMode": "value",
         "graphMode": "none",
         "justifyMode": "auto"
       },
-      "fieldConfig": { "defaults": { "color": { "mode": "fixed", "fixedColor": "blue" } }, "overrides": [] },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "blue"
+          }
+        },
+        "overrides": []
+      },
       "targets": [
         {
           "refId": "A",
-          "datasource": { "type": "yesoreyeram-infinity-datasource", "uid": "${DS_INFINITY}" },
+          "datasource": {
+            "type": "yesoreyeram-infinity-datasource",
+            "uid": "${DS_INFINITY}"
+          },
           "type": "json",
           "source": "url",
           "parser": "backend",
           "format": "table",
           "url": "${stats_url}?view=summary",
-          "url_options": { "method": "GET", "data": "" },
+          "url_options": {
+            "method": "GET",
+            "data": ""
+          },
           "root_selector": "",
           "columns": [
-            { "selector": "total_users", "text": "total_users", "type": "number" },
-            { "selector": "active_users", "text": "active_users", "type": "number" }
+            {
+              "selector": "total_users",
+              "text": "total_users",
+              "type": "number"
+            },
+            {
+              "selector": "active_users",
+              "text": "active_users",
+              "type": "number"
+            }
           ]
         }
       ]
@@ -95,32 +174,68 @@
     {
       "type": "stat",
       "title": "Active users",
-      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 1 },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 6,
+        "y": 1
+      },
       "id": 3,
-      "datasource": { "type": "yesoreyeram-infinity-datasource", "uid": "${DS_INFINITY}" },
+      "datasource": {
+        "type": "yesoreyeram-infinity-datasource",
+        "uid": "${DS_INFINITY}"
+      },
       "options": {
-        "reduceOptions": { "values": false, "calcs": ["lastNotNull"], "fields": "/^active_users$/" },
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "/^active_users$/"
+        },
         "orientation": "auto",
         "textMode": "value",
         "colorMode": "value",
         "graphMode": "none",
         "justifyMode": "auto"
       },
-      "fieldConfig": { "defaults": { "color": { "mode": "fixed", "fixedColor": "green" } }, "overrides": [] },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "green"
+          }
+        },
+        "overrides": []
+      },
       "targets": [
         {
           "refId": "A",
-          "datasource": { "type": "yesoreyeram-infinity-datasource", "uid": "${DS_INFINITY}" },
+          "datasource": {
+            "type": "yesoreyeram-infinity-datasource",
+            "uid": "${DS_INFINITY}"
+          },
           "type": "json",
           "source": "url",
           "parser": "backend",
           "format": "table",
           "url": "${stats_url}?view=summary",
-          "url_options": { "method": "GET", "data": "" },
+          "url_options": {
+            "method": "GET",
+            "data": ""
+          },
           "root_selector": "",
           "columns": [
-            { "selector": "total_users", "text": "total_users", "type": "number" },
-            { "selector": "active_users", "text": "active_users", "type": "number" }
+            {
+              "selector": "total_users",
+              "text": "total_users",
+              "type": "number"
+            },
+            {
+              "selector": "active_users",
+              "text": "active_users",
+              "type": "number"
+            }
           ]
         }
       ]
@@ -128,31 +243,63 @@
     {
       "type": "stat",
       "title": "Total checks",
-      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 1 },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 12,
+        "y": 1
+      },
       "id": 4,
-      "datasource": { "type": "yesoreyeram-infinity-datasource", "uid": "${DS_INFINITY}" },
+      "datasource": {
+        "type": "yesoreyeram-infinity-datasource",
+        "uid": "${DS_INFINITY}"
+      },
       "options": {
-        "reduceOptions": { "values": false, "calcs": ["lastNotNull"], "fields": "/^total_checks$/" },
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "/^total_checks$/"
+        },
         "orientation": "auto",
         "textMode": "value",
         "colorMode": "value",
         "graphMode": "none",
         "justifyMode": "auto"
       },
-      "fieldConfig": { "defaults": { "color": { "mode": "fixed", "fixedColor": "purple" } }, "overrides": [] },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "purple"
+          }
+        },
+        "overrides": []
+      },
       "targets": [
         {
           "refId": "A",
-          "datasource": { "type": "yesoreyeram-infinity-datasource", "uid": "${DS_INFINITY}" },
+          "datasource": {
+            "type": "yesoreyeram-infinity-datasource",
+            "uid": "${DS_INFINITY}"
+          },
           "type": "json",
           "source": "url",
           "parser": "backend",
           "format": "table",
           "url": "${stats_url}?view=summary",
-          "url_options": { "method": "GET", "data": "" },
+          "url_options": {
+            "method": "GET",
+            "data": ""
+          },
           "root_selector": "",
           "columns": [
-            { "selector": "total_checks", "text": "total_checks", "type": "number" }
+            {
+              "selector": "total_checks",
+              "text": "total_checks",
+              "type": "number"
+            }
           ]
         }
       ]
@@ -160,11 +307,25 @@
     {
       "type": "stat",
       "title": "Response rate",
-      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 1 },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 18,
+        "y": 1
+      },
       "id": 5,
-      "datasource": { "type": "yesoreyeram-infinity-datasource", "uid": "${DS_INFINITY}" },
+      "datasource": {
+        "type": "yesoreyeram-infinity-datasource",
+        "uid": "${DS_INFINITY}"
+      },
       "options": {
-        "reduceOptions": { "values": false, "calcs": ["lastNotNull"], "fields": "/^response_rate$/" },
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "/^response_rate$/"
+        },
         "orientation": "auto",
         "textMode": "value",
         "colorMode": "value",
@@ -176,13 +337,24 @@
           "unit": "percentunit",
           "min": 0,
           "max": 1,
-          "color": { "mode": "thresholds" },
+          "color": {
+            "mode": "thresholds"
+          },
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              { "color": "red", "value": null },
-              { "color": "orange", "value": 0.5 },
-              { "color": "green", "value": 0.8 }
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 0.5
+              },
+              {
+                "color": "green",
+                "value": 0.8
+              }
             ]
           }
         },
@@ -191,16 +363,26 @@
       "targets": [
         {
           "refId": "A",
-          "datasource": { "type": "yesoreyeram-infinity-datasource", "uid": "${DS_INFINITY}" },
+          "datasource": {
+            "type": "yesoreyeram-infinity-datasource",
+            "uid": "${DS_INFINITY}"
+          },
           "type": "json",
           "source": "url",
           "parser": "backend",
           "format": "table",
           "url": "${stats_url}?view=summary",
-          "url_options": { "method": "GET", "data": "" },
+          "url_options": {
+            "method": "GET",
+            "data": ""
+          },
           "root_selector": "",
           "columns": [
-            { "selector": "response_rate", "text": "response_rate", "type": "number" }
+            {
+              "selector": "response_rate",
+              "text": "response_rate",
+              "type": "number"
+            }
           ]
         }
       ]
@@ -209,45 +391,137 @@
       "type": "row",
       "title": "Activity",
       "collapsed": false,
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 5 },
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 5
+      },
       "id": 6,
       "panels": []
     },
     {
       "type": "piechart",
       "title": "Answer breakdown",
-      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 6 },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 0,
+        "y": 6
+      },
       "id": 7,
-      "datasource": { "type": "yesoreyeram-infinity-datasource", "uid": "${DS_INFINITY}" },
+      "datasource": {
+        "type": "yesoreyeram-infinity-datasource",
+        "uid": "${DS_INFINITY}"
+      },
       "options": {
-        "reduceOptions": { "values": false, "calcs": ["lastNotNull"], "fields": "/^(yes|no|ignored)$/" },
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "/^(yes|no|ignored)$/"
+        },
         "pieType": "donut",
-        "tooltip": { "mode": "single", "sort": "none" },
-        "legend": { "displayMode": "list", "placement": "right", "values": ["value"] }
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        },
+        "legend": {
+          "displayMode": "list",
+          "placement": "right",
+          "values": [
+            "value"
+          ]
+        }
       },
       "fieldConfig": {
-        "defaults": { "color": { "mode": "palette-classic" } },
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
         "overrides": [
-          { "matcher": { "id": "byName", "options": "yes" }, "properties": [ { "id": "color", "value": { "mode": "fixed", "fixedColor": "green" } } ] },
-          { "matcher": { "id": "byName", "options": "no" }, "properties": [ { "id": "color", "value": { "mode": "fixed", "fixedColor": "orange" } } ] },
-          { "matcher": { "id": "byName", "options": "ignored" }, "properties": [ { "id": "color", "value": { "mode": "fixed", "fixedColor": "red" } } ] }
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "yes"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "green"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "no"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "orange"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "ignored"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "red"
+                }
+              }
+            ]
+          }
         ]
       },
       "targets": [
         {
           "refId": "A",
-          "datasource": { "type": "yesoreyeram-infinity-datasource", "uid": "${DS_INFINITY}" },
+          "datasource": {
+            "type": "yesoreyeram-infinity-datasource",
+            "uid": "${DS_INFINITY}"
+          },
           "type": "json",
           "source": "url",
           "parser": "backend",
           "format": "table",
           "url": "${stats_url}?view=summary",
-          "url_options": { "method": "GET", "data": "" },
+          "url_options": {
+            "method": "GET",
+            "data": ""
+          },
           "root_selector": "",
           "columns": [
-            { "selector": "yes", "text": "yes", "type": "number" },
-            { "selector": "no", "text": "no", "type": "number" },
-            { "selector": "ignored", "text": "ignored", "type": "number" }
+            {
+              "selector": "yes",
+              "text": "yes",
+              "type": "number"
+            },
+            {
+              "selector": "no",
+              "text": "no",
+              "type": "number"
+            },
+            {
+              "selector": "ignored",
+              "text": "ignored",
+              "type": "number"
+            }
           ]
         }
       ]
@@ -255,25 +529,78 @@
     {
       "type": "table",
       "title": "Recent checks",
-      "gridPos": { "h": 8, "w": 16, "x": 8, "y": 6 },
+      "gridPos": {
+        "h": 8,
+        "w": 16,
+        "x": 8,
+        "y": 6
+      },
       "id": 8,
-      "datasource": { "type": "yesoreyeram-infinity-datasource", "uid": "${DS_INFINITY}" },
+      "datasource": {
+        "type": "yesoreyeram-infinity-datasource",
+        "uid": "${DS_INFINITY}"
+      },
       "options": {
         "showHeader": true,
-        "sortBy": [ { "displayName": "checked_at", "desc": true } ]
+        "sortBy": [
+          {
+            "displayName": "checked_at",
+            "desc": true
+          }
+        ]
       },
       "fieldConfig": {
-        "defaults": { "custom": { "align": "auto", "filterable": true } },
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "filterable": true
+          }
+        },
         "overrides": [
-          { "matcher": { "id": "byName", "options": "latency_seconds" }, "properties": [ { "id": "unit", "value": "s" } ] },
           {
-            "matcher": { "id": "byName", "options": "status" },
+            "matcher": {
+              "id": "byName",
+              "options": "latency_seconds"
+            },
             "properties": [
-              { "id": "custom.cellOptions", "value": { "type": "color-text" } },
+              {
+                "id": "unit",
+                "value": "s"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "status"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-text"
+                }
+              },
               {
                 "id": "mappings",
                 "value": [
-                  { "type": "value", "options": { "yes": { "color": "green", "index": 0 }, "no": { "color": "orange", "index": 1 }, "ignored": { "color": "red", "index": 2 } } }
+                  {
+                    "type": "value",
+                    "options": {
+                      "yes": {
+                        "color": "green",
+                        "index": 0
+                      },
+                      "no": {
+                        "color": "orange",
+                        "index": 1
+                      },
+                      "ignored": {
+                        "color": "red",
+                        "index": 2
+                      }
+                    }
+                  }
                 ]
               }
             ]
@@ -283,32 +610,85 @@
       "targets": [
         {
           "refId": "A",
-          "datasource": { "type": "yesoreyeram-infinity-datasource", "uid": "${DS_INFINITY}" },
+          "datasource": {
+            "type": "yesoreyeram-infinity-datasource",
+            "uid": "${DS_INFINITY}"
+          },
           "type": "json",
           "source": "url",
           "parser": "backend",
           "format": "table",
           "url": "${stats_url}?view=logs",
-          "url_options": { "method": "GET", "data": "" },
+          "url_options": {
+            "method": "GET",
+            "data": ""
+          },
           "root_selector": "",
           "columns": [
-            { "selector": "username", "text": "username", "type": "string" },
-            { "selector": "checked_at", "text": "checked_at", "type": "timestamp_epoch_s" },
-            { "selector": "status", "text": "status", "type": "string" },
-            { "selector": "latency_seconds", "text": "latency_seconds", "type": "number" }
+            {
+              "selector": "username",
+              "text": "username",
+              "type": "string"
+            },
+            {
+              "selector": "checked_at",
+              "text": "checked_at",
+              "type": "timestamp_epoch_s"
+            },
+            {
+              "selector": "status",
+              "text": "status",
+              "type": "string"
+            },
+            {
+              "selector": "latency_seconds",
+              "text": "latency_seconds",
+              "type": "number"
+            }
           ]
+        }
+      ],
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {},
+            "includeByName": {},
+            "indexByName": {
+              "username": 0,
+              "checked_at": 1,
+              "status": 2,
+              "latency_seconds": 3
+            },
+            "renameByName": {}
+          }
         }
       ]
     },
     {
       "type": "timeseries",
       "title": "Answer latency over time (each point = one answered check)",
-      "gridPos": { "h": 7, "w": 24, "x": 0, "y": 14 },
+      "gridPos": {
+        "h": 7,
+        "w": 24,
+        "x": 0,
+        "y": 14
+      },
       "id": 9,
-      "datasource": { "type": "yesoreyeram-infinity-datasource", "uid": "${DS_INFINITY}" },
+      "datasource": {
+        "type": "yesoreyeram-infinity-datasource",
+        "uid": "${DS_INFINITY}"
+      },
       "options": {
-        "tooltip": { "mode": "single", "sort": "none" },
-        "legend": { "displayMode": "list", "placement": "bottom", "calcs": [] }
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        },
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "calcs": []
+        }
       },
       "fieldConfig": {
         "defaults": {
@@ -320,24 +700,41 @@
             "lineWidth": 0,
             "axisPlacement": "auto"
           },
-          "color": { "mode": "fixed", "fixedColor": "blue" }
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "blue"
+          }
         },
         "overrides": []
       },
       "targets": [
         {
           "refId": "A",
-          "datasource": { "type": "yesoreyeram-infinity-datasource", "uid": "${DS_INFINITY}" },
+          "datasource": {
+            "type": "yesoreyeram-infinity-datasource",
+            "uid": "${DS_INFINITY}"
+          },
           "type": "json",
           "source": "url",
           "parser": "backend",
           "format": "table",
           "url": "${stats_url}?view=logs",
-          "url_options": { "method": "GET", "data": "" },
+          "url_options": {
+            "method": "GET",
+            "data": ""
+          },
           "root_selector": "",
           "columns": [
-            { "selector": "checked_at", "text": "checked_at", "type": "timestamp_epoch_s" },
-            { "selector": "latency_seconds", "text": "latency_seconds", "type": "number" }
+            {
+              "selector": "checked_at",
+              "text": "checked_at",
+              "type": "timestamp_epoch_s"
+            },
+            {
+              "selector": "latency_seconds",
+              "text": "latency_seconds",
+              "type": "number"
+            }
           ]
         }
       ]
@@ -346,26 +743,88 @@
       "type": "row",
       "title": "Users",
       "collapsed": false,
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 21 },
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 21
+      },
       "id": 10,
       "panels": []
     },
     {
       "type": "table",
       "title": "Users",
-      "gridPos": { "h": 7, "w": 24, "x": 0, "y": 22 },
+      "gridPos": {
+        "h": 7,
+        "w": 24,
+        "x": 0,
+        "y": 22
+      },
       "id": 11,
-      "datasource": { "type": "yesoreyeram-infinity-datasource", "uid": "${DS_INFINITY}" },
-      "options": { "showHeader": true, "sortBy": [ { "displayName": "next_check_at", "desc": false } ] },
-      "fieldConfig": {
-        "defaults": { "custom": { "align": "auto", "filterable": true } },
-        "overrides": [
-          { "matcher": { "id": "byName", "options": "frequency_seconds" }, "properties": [ { "id": "unit", "value": "s" } ] },
+      "datasource": {
+        "type": "yesoreyeram-infinity-datasource",
+        "uid": "${DS_INFINITY}"
+      },
+      "options": {
+        "showHeader": true,
+        "sortBy": [
           {
-            "matcher": { "id": "byName", "options": "active" },
+            "displayName": "next_check_at",
+            "desc": false
+          }
+        ]
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "filterable": true
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "frequency_seconds"
+            },
             "properties": [
-              { "id": "custom.cellOptions", "value": { "type": "color-text" } },
-              { "id": "mappings", "value": [ { "type": "value", "options": { "true": { "color": "green", "index": 0 }, "false": { "color": "red", "index": 1 } } } ] }
+              {
+                "id": "unit",
+                "value": "s"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "active"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-text"
+                }
+              },
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "true": {
+                        "color": "green",
+                        "index": 0
+                      },
+                      "false": {
+                        "color": "red",
+                        "index": 1
+                      }
+                    }
+                  }
+                ]
+              }
             ]
           }
         ]
@@ -373,21 +832,64 @@
       "targets": [
         {
           "refId": "A",
-          "datasource": { "type": "yesoreyeram-infinity-datasource", "uid": "${DS_INFINITY}" },
+          "datasource": {
+            "type": "yesoreyeram-infinity-datasource",
+            "uid": "${DS_INFINITY}"
+          },
           "type": "json",
           "source": "url",
           "parser": "backend",
           "format": "table",
           "url": "${stats_url}?view=users",
-          "url_options": { "method": "GET", "data": "" },
+          "url_options": {
+            "method": "GET",
+            "data": ""
+          },
           "root_selector": "",
           "columns": [
-            { "selector": "username", "text": "username", "type": "string" },
-            { "selector": "frequency_seconds", "text": "frequency_seconds", "type": "number" },
-            { "selector": "next_check_at", "text": "next_check_at", "type": "timestamp_epoch_s" },
-            { "selector": "active", "text": "active", "type": "string" },
-            { "selector": "pending_check", "text": "pending_check", "type": "string" }
+            {
+              "selector": "username",
+              "text": "username",
+              "type": "string"
+            },
+            {
+              "selector": "frequency_seconds",
+              "text": "frequency_seconds",
+              "type": "number"
+            },
+            {
+              "selector": "next_check_at",
+              "text": "next_check_at",
+              "type": "timestamp_epoch_s"
+            },
+            {
+              "selector": "active",
+              "text": "active",
+              "type": "string"
+            },
+            {
+              "selector": "pending_check",
+              "text": "pending_check",
+              "type": "string"
+            }
           ]
+        }
+      ],
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {},
+            "includeByName": {},
+            "indexByName": {
+              "username": 0,
+              "frequency_seconds": 1,
+              "next_check_at": 2,
+              "active": 3,
+              "pending_check": 4
+            },
+            "renameByName": {}
+          }
         }
       ]
     }

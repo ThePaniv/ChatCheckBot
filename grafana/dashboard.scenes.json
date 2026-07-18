@@ -1,0 +1,1291 @@
+{
+  "annotations": [
+    {
+      "kind": "AnnotationQuery",
+      "spec": {
+        "builtIn": true,
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "query": {
+          "datasource": {
+            "name": "-- Grafana --"
+          },
+          "group": "grafana",
+          "kind": "DataQuery",
+          "spec": {},
+          "version": "v0"
+        }
+      }
+    }
+  ],
+  "cursorSync": "Off",
+  "editable": true,
+  "elements": {
+    "panel-11": {
+      "kind": "Panel",
+      "spec": {
+        "data": {
+          "kind": "QueryGroup",
+          "spec": {
+            "queries": [
+              {
+                "kind": "PanelQuery",
+                "spec": {
+                  "hidden": false,
+                  "query": {
+                    "datasource": {
+                      "name": "efsgrjl4ycpvkd"
+                    },
+                    "group": "yesoreyeram-infinity-datasource",
+                    "kind": "DataQuery",
+                    "spec": {
+                      "columns": [
+                        {
+                          "selector": "username",
+                          "text": "username",
+                          "type": "string"
+                        },
+                        {
+                          "selector": "frequency_seconds",
+                          "text": "frequency_seconds",
+                          "type": "number"
+                        },
+                        {
+                          "selector": "next_check_at",
+                          "text": "next_check_at",
+                          "type": "timestamp_epoch_s"
+                        },
+                        {
+                          "selector": "active",
+                          "text": "active",
+                          "type": "string"
+                        },
+                        {
+                          "selector": "pending_check",
+                          "text": "pending_check",
+                          "type": "string"
+                        }
+                      ],
+                      "format": "table",
+                      "parser": "backend",
+                      "root_selector": "",
+                      "source": "url",
+                      "type": "json",
+                      "url": "${stats_url}?view=users",
+                      "url_options": {
+                        "data": "",
+                        "method": "GET"
+                      }
+                    },
+                    "version": "v0"
+                  },
+                  "refId": "A"
+                }
+              }
+            ],
+            "queryOptions": {},
+            "transformations": [
+              {
+                "kind": "organize",
+                "spec": {
+                  "id": "organize",
+                  "options": {
+                    "excludeByName": {},
+                    "includeByName": {},
+                    "indexByName": {
+                      "username": 0,
+                      "frequency_seconds": 1,
+                      "next_check_at": 2,
+                      "active": 3,
+                      "pending_check": 4
+                    },
+                    "renameByName": {}
+                  }
+                }
+              }
+            ]
+          }
+        },
+        "description": "",
+        "id": 11,
+        "links": [],
+        "title": "Users",
+        "vizConfig": {
+          "group": "table",
+          "kind": "VizConfig",
+          "spec": {
+            "fieldConfig": {
+              "defaults": {
+                "custom": {
+                  "align": "auto",
+                  "cellOptions": {
+                    "type": "auto"
+                  },
+                  "filterable": true,
+                  "footer": {
+                    "reducers": []
+                  },
+                  "inspect": false
+                },
+                "thresholds": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green",
+                      "value": 0
+                    },
+                    {
+                      "color": "red",
+                      "value": 80
+                    }
+                  ]
+                }
+              },
+              "overrides": [
+                {
+                  "matcher": {
+                    "id": "byName",
+                    "options": "frequency_seconds"
+                  },
+                  "properties": [
+                    {
+                      "id": "unit",
+                      "value": "s"
+                    }
+                  ]
+                },
+                {
+                  "matcher": {
+                    "id": "byName",
+                    "options": "active"
+                  },
+                  "properties": [
+                    {
+                      "id": "custom.cellOptions",
+                      "value": {
+                        "type": "color-text"
+                      }
+                    },
+                    {
+                      "id": "mappings",
+                      "value": [
+                        {
+                          "options": {
+                            "false": {
+                              "color": "red",
+                              "index": 1
+                            },
+                            "true": {
+                              "color": "green",
+                              "index": 0
+                            }
+                          },
+                          "type": "value"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            "options": {
+              "cellHeight": "sm",
+              "showHeader": true,
+              "sortBy": [
+                {
+                  "desc": false,
+                  "displayName": "next_check_at"
+                }
+              ]
+            }
+          },
+          "version": "13.2.0-29079983887"
+        }
+      }
+    },
+    "panel-2": {
+      "kind": "Panel",
+      "spec": {
+        "data": {
+          "kind": "QueryGroup",
+          "spec": {
+            "queries": [
+              {
+                "kind": "PanelQuery",
+                "spec": {
+                  "hidden": false,
+                  "query": {
+                    "datasource": {
+                      "name": "efsgrjl4ycpvkd"
+                    },
+                    "group": "yesoreyeram-infinity-datasource",
+                    "kind": "DataQuery",
+                    "spec": {
+                      "columns": [
+                        {
+                          "selector": "total_users",
+                          "text": "total_users",
+                          "type": "number"
+                        },
+                        {
+                          "selector": "active_users",
+                          "text": "active_users",
+                          "type": "number"
+                        }
+                      ],
+                      "format": "table",
+                      "parser": "backend",
+                      "root_selector": "",
+                      "source": "url",
+                      "type": "json",
+                      "url": "${stats_url}?view=summary",
+                      "url_options": {
+                        "data": "",
+                        "method": "GET"
+                      }
+                    },
+                    "version": "v0"
+                  },
+                  "refId": "A"
+                }
+              }
+            ],
+            "queryOptions": {},
+            "transformations": []
+          }
+        },
+        "description": "",
+        "id": 2,
+        "links": [],
+        "title": "Users",
+        "vizConfig": {
+          "group": "stat",
+          "kind": "VizConfig",
+          "spec": {
+            "fieldConfig": {
+              "defaults": {
+                "color": {
+                  "fixedColor": "blue",
+                  "mode": "fixed"
+                },
+                "thresholds": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green",
+                      "value": 0
+                    },
+                    {
+                      "color": "red",
+                      "value": 80
+                    }
+                  ]
+                }
+              },
+              "overrides": []
+            },
+            "options": {
+              "colorMode": "value",
+              "graphMode": "none",
+              "justifyMode": "auto",
+              "orientation": "auto",
+              "percentChangeColorMode": "standard",
+              "reduceOptions": {
+                "calcs": [
+                  "lastNotNull"
+                ],
+                "fields": "/^total_users$/",
+                "values": false
+              },
+              "showPercentChange": false,
+              "textMode": "value",
+              "wideLayout": true
+            }
+          },
+          "version": "13.2.0-29079983887"
+        }
+      }
+    },
+    "panel-3": {
+      "kind": "Panel",
+      "spec": {
+        "data": {
+          "kind": "QueryGroup",
+          "spec": {
+            "queries": [
+              {
+                "kind": "PanelQuery",
+                "spec": {
+                  "hidden": false,
+                  "query": {
+                    "datasource": {
+                      "name": "efsgrjl4ycpvkd"
+                    },
+                    "group": "yesoreyeram-infinity-datasource",
+                    "kind": "DataQuery",
+                    "spec": {
+                      "columns": [
+                        {
+                          "selector": "total_users",
+                          "text": "total_users",
+                          "type": "number"
+                        },
+                        {
+                          "selector": "active_users",
+                          "text": "active_users",
+                          "type": "number"
+                        }
+                      ],
+                      "format": "table",
+                      "parser": "backend",
+                      "root_selector": "",
+                      "source": "url",
+                      "type": "json",
+                      "url": "${stats_url}?view=summary",
+                      "url_options": {
+                        "data": "",
+                        "method": "GET"
+                      }
+                    },
+                    "version": "v0"
+                  },
+                  "refId": "A"
+                }
+              }
+            ],
+            "queryOptions": {},
+            "transformations": []
+          }
+        },
+        "description": "",
+        "id": 3,
+        "links": [],
+        "title": "Active users",
+        "vizConfig": {
+          "group": "stat",
+          "kind": "VizConfig",
+          "spec": {
+            "fieldConfig": {
+              "defaults": {
+                "color": {
+                  "fixedColor": "green",
+                  "mode": "fixed"
+                },
+                "thresholds": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green",
+                      "value": 0
+                    },
+                    {
+                      "color": "red",
+                      "value": 80
+                    }
+                  ]
+                }
+              },
+              "overrides": []
+            },
+            "options": {
+              "colorMode": "value",
+              "graphMode": "none",
+              "justifyMode": "auto",
+              "orientation": "auto",
+              "percentChangeColorMode": "standard",
+              "reduceOptions": {
+                "calcs": [
+                  "lastNotNull"
+                ],
+                "fields": "/^active_users$/",
+                "values": false
+              },
+              "showPercentChange": false,
+              "textMode": "value",
+              "wideLayout": true
+            }
+          },
+          "version": "13.2.0-29079983887"
+        }
+      }
+    },
+    "panel-4": {
+      "kind": "Panel",
+      "spec": {
+        "data": {
+          "kind": "QueryGroup",
+          "spec": {
+            "queries": [
+              {
+                "kind": "PanelQuery",
+                "spec": {
+                  "hidden": false,
+                  "query": {
+                    "datasource": {
+                      "name": "efsgrjl4ycpvkd"
+                    },
+                    "group": "yesoreyeram-infinity-datasource",
+                    "kind": "DataQuery",
+                    "spec": {
+                      "columns": [
+                        {
+                          "selector": "total_checks",
+                          "text": "total_checks",
+                          "type": "number"
+                        }
+                      ],
+                      "format": "table",
+                      "parser": "backend",
+                      "root_selector": "",
+                      "source": "url",
+                      "type": "json",
+                      "url": "${stats_url}?view=summary",
+                      "url_options": {
+                        "data": "",
+                        "method": "GET"
+                      }
+                    },
+                    "version": "v0"
+                  },
+                  "refId": "A"
+                }
+              }
+            ],
+            "queryOptions": {},
+            "transformations": []
+          }
+        },
+        "description": "",
+        "id": 4,
+        "links": [],
+        "title": "Total checks",
+        "vizConfig": {
+          "group": "stat",
+          "kind": "VizConfig",
+          "spec": {
+            "fieldConfig": {
+              "defaults": {
+                "color": {
+                  "fixedColor": "purple",
+                  "mode": "fixed"
+                },
+                "thresholds": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green",
+                      "value": 0
+                    },
+                    {
+                      "color": "red",
+                      "value": 80
+                    }
+                  ]
+                }
+              },
+              "overrides": []
+            },
+            "options": {
+              "colorMode": "value",
+              "graphMode": "none",
+              "justifyMode": "auto",
+              "orientation": "auto",
+              "percentChangeColorMode": "standard",
+              "reduceOptions": {
+                "calcs": [
+                  "lastNotNull"
+                ],
+                "fields": "/^total_checks$/",
+                "values": false
+              },
+              "showPercentChange": false,
+              "textMode": "value",
+              "wideLayout": true
+            }
+          },
+          "version": "13.2.0-29079983887"
+        }
+      }
+    },
+    "panel-5": {
+      "kind": "Panel",
+      "spec": {
+        "data": {
+          "kind": "QueryGroup",
+          "spec": {
+            "queries": [
+              {
+                "kind": "PanelQuery",
+                "spec": {
+                  "hidden": false,
+                  "query": {
+                    "datasource": {
+                      "name": "efsgrjl4ycpvkd"
+                    },
+                    "group": "yesoreyeram-infinity-datasource",
+                    "kind": "DataQuery",
+                    "spec": {
+                      "columns": [
+                        {
+                          "selector": "response_rate",
+                          "text": "response_rate",
+                          "type": "number"
+                        }
+                      ],
+                      "format": "table",
+                      "parser": "backend",
+                      "root_selector": "",
+                      "source": "url",
+                      "type": "json",
+                      "url": "${stats_url}?view=summary",
+                      "url_options": {
+                        "data": "",
+                        "method": "GET"
+                      }
+                    },
+                    "version": "v0"
+                  },
+                  "refId": "A"
+                }
+              }
+            ],
+            "queryOptions": {},
+            "transformations": []
+          }
+        },
+        "description": "",
+        "id": 5,
+        "links": [],
+        "title": "Response rate",
+        "vizConfig": {
+          "group": "stat",
+          "kind": "VizConfig",
+          "spec": {
+            "fieldConfig": {
+              "defaults": {
+                "color": {
+                  "mode": "thresholds"
+                },
+                "max": 1,
+                "min": 0,
+                "thresholds": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "red",
+                      "value": 0
+                    },
+                    {
+                      "color": "orange",
+                      "value": 0.5
+                    },
+                    {
+                      "color": "green",
+                      "value": 0.8
+                    }
+                  ]
+                },
+                "unit": "percentunit"
+              },
+              "overrides": []
+            },
+            "options": {
+              "colorMode": "value",
+              "graphMode": "none",
+              "justifyMode": "auto",
+              "orientation": "auto",
+              "percentChangeColorMode": "standard",
+              "reduceOptions": {
+                "calcs": [
+                  "lastNotNull"
+                ],
+                "fields": "/^response_rate$/",
+                "values": false
+              },
+              "showPercentChange": false,
+              "textMode": "value",
+              "wideLayout": true
+            }
+          },
+          "version": "13.2.0-29079983887"
+        }
+      }
+    },
+    "panel-7": {
+      "kind": "Panel",
+      "spec": {
+        "data": {
+          "kind": "QueryGroup",
+          "spec": {
+            "queries": [
+              {
+                "kind": "PanelQuery",
+                "spec": {
+                  "hidden": false,
+                  "query": {
+                    "datasource": {
+                      "name": "efsgrjl4ycpvkd"
+                    },
+                    "group": "yesoreyeram-infinity-datasource",
+                    "kind": "DataQuery",
+                    "spec": {
+                      "columns": [
+                        {
+                          "selector": "yes",
+                          "text": "yes",
+                          "type": "number"
+                        },
+                        {
+                          "selector": "no",
+                          "text": "no",
+                          "type": "number"
+                        },
+                        {
+                          "selector": "ignored",
+                          "text": "ignored",
+                          "type": "number"
+                        }
+                      ],
+                      "format": "table",
+                      "parser": "backend",
+                      "root_selector": "",
+                      "source": "url",
+                      "type": "json",
+                      "url": "${stats_url}?view=summary",
+                      "url_options": {
+                        "data": "",
+                        "method": "GET"
+                      }
+                    },
+                    "version": "v0"
+                  },
+                  "refId": "A"
+                }
+              }
+            ],
+            "queryOptions": {},
+            "transformations": []
+          }
+        },
+        "description": "",
+        "id": 7,
+        "links": [],
+        "title": "Answer breakdown",
+        "vizConfig": {
+          "group": "piechart",
+          "kind": "VizConfig",
+          "spec": {
+            "fieldConfig": {
+              "defaults": {
+                "color": {
+                  "fixedColor": "#73BF69",
+                  "mode": "palette-classic"
+                },
+                "custom": {
+                  "hideFrom": {
+                    "legend": false,
+                    "tooltip": false,
+                    "viz": false
+                  }
+                }
+              },
+              "overrides": [
+                {
+                  "matcher": {
+                    "id": "byName",
+                    "options": "yes"
+                  },
+                  "properties": [
+                    {
+                      "id": "color",
+                      "value": {
+                        "fixedColor": "green",
+                        "mode": "fixed"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "matcher": {
+                    "id": "byName",
+                    "options": "no"
+                  },
+                  "properties": [
+                    {
+                      "id": "color",
+                      "value": {
+                        "fixedColor": "orange",
+                        "mode": "fixed"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "matcher": {
+                    "id": "byName",
+                    "options": "ignored"
+                  },
+                  "properties": [
+                    {
+                      "id": "color",
+                      "value": {
+                        "fixedColor": "red",
+                        "mode": "fixed"
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            "options": {
+              "legend": {
+                "displayMode": "list",
+                "overflow": "ellipsis",
+                "placement": "right",
+                "showLegend": true,
+                "values": [
+                  "value"
+                ]
+              },
+              "pieType": "donut",
+              "reduceOptions": {
+                "calcs": [
+                  "lastNotNull"
+                ],
+                "fields": "/^(yes|no|ignored)$/",
+                "values": false
+              },
+              "sort": "desc",
+              "tooltip": {
+                "hideZeros": false,
+                "mode": "single",
+                "sort": "none"
+              }
+            }
+          },
+          "version": "13.2.0-29079983887"
+        }
+      }
+    },
+    "panel-8": {
+      "kind": "Panel",
+      "spec": {
+        "data": {
+          "kind": "QueryGroup",
+          "spec": {
+            "queries": [
+              {
+                "kind": "PanelQuery",
+                "spec": {
+                  "hidden": false,
+                  "query": {
+                    "datasource": {
+                      "name": "efsgrjl4ycpvkd"
+                    },
+                    "group": "yesoreyeram-infinity-datasource",
+                    "kind": "DataQuery",
+                    "spec": {
+                      "columns": [
+                        {
+                          "selector": "username",
+                          "text": "username",
+                          "type": "string"
+                        },
+                        {
+                          "selector": "checked_at",
+                          "text": "checked_at",
+                          "type": "timestamp_epoch_s"
+                        },
+                        {
+                          "selector": "status",
+                          "text": "status",
+                          "type": "string"
+                        },
+                        {
+                          "selector": "latency_seconds",
+                          "text": "latency_seconds",
+                          "type": "number"
+                        }
+                      ],
+                      "format": "table",
+                      "parser": "backend",
+                      "root_selector": "",
+                      "source": "url",
+                      "type": "json",
+                      "url": "${stats_url}?view=logs",
+                      "url_options": {
+                        "data": "",
+                        "method": "GET"
+                      }
+                    },
+                    "version": "v0"
+                  },
+                  "refId": "A"
+                }
+              }
+            ],
+            "queryOptions": {},
+            "transformations": [
+              {
+                "kind": "organize",
+                "spec": {
+                  "id": "organize",
+                  "options": {
+                    "excludeByName": {},
+                    "includeByName": {},
+                    "indexByName": {
+                      "username": 0,
+                      "checked_at": 1,
+                      "status": 2,
+                      "latency_seconds": 3
+                    },
+                    "renameByName": {}
+                  }
+                }
+              }
+            ]
+          }
+        },
+        "description": "",
+        "id": 8,
+        "links": [],
+        "title": "Recent checks",
+        "vizConfig": {
+          "group": "table",
+          "kind": "VizConfig",
+          "spec": {
+            "fieldConfig": {
+              "defaults": {
+                "custom": {
+                  "align": "auto",
+                  "cellOptions": {
+                    "type": "auto"
+                  },
+                  "filterable": true,
+                  "footer": {
+                    "reducers": []
+                  },
+                  "inspect": false
+                },
+                "thresholds": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green",
+                      "value": 0
+                    },
+                    {
+                      "color": "red",
+                      "value": 80
+                    }
+                  ]
+                }
+              },
+              "overrides": [
+                {
+                  "matcher": {
+                    "id": "byName",
+                    "options": "latency_seconds"
+                  },
+                  "properties": [
+                    {
+                      "id": "unit",
+                      "value": "s"
+                    }
+                  ]
+                },
+                {
+                  "matcher": {
+                    "id": "byName",
+                    "options": "status"
+                  },
+                  "properties": [
+                    {
+                      "id": "custom.cellOptions",
+                      "value": {
+                        "type": "color-text"
+                      }
+                    },
+                    {
+                      "id": "mappings",
+                      "value": [
+                        {
+                          "options": {
+                            "ignored": {
+                              "color": "red",
+                              "index": 2
+                            },
+                            "no": {
+                              "color": "orange",
+                              "index": 1
+                            },
+                            "yes": {
+                              "color": "green",
+                              "index": 0
+                            }
+                          },
+                          "type": "value"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            "options": {
+              "cellHeight": "sm",
+              "showHeader": true,
+              "sortBy": [
+                {
+                  "desc": true,
+                  "displayName": "checked_at"
+                }
+              ]
+            }
+          },
+          "version": "13.2.0-29079983887"
+        }
+      }
+    },
+    "panel-9": {
+      "kind": "Panel",
+      "spec": {
+        "data": {
+          "kind": "QueryGroup",
+          "spec": {
+            "queries": [
+              {
+                "kind": "PanelQuery",
+                "spec": {
+                  "hidden": false,
+                  "query": {
+                    "datasource": {
+                      "name": "efsgrjl4ycpvkd"
+                    },
+                    "group": "yesoreyeram-infinity-datasource",
+                    "kind": "DataQuery",
+                    "spec": {
+                      "columns": [
+                        {
+                          "selector": "checked_at",
+                          "text": "checked_at",
+                          "type": "timestamp_epoch_s"
+                        },
+                        {
+                          "selector": "latency_seconds",
+                          "text": "latency_seconds",
+                          "type": "number"
+                        }
+                      ],
+                      "format": "table",
+                      "parser": "backend",
+                      "root_selector": "",
+                      "source": "url",
+                      "type": "json",
+                      "url": "${stats_url}?view=logs",
+                      "url_options": {
+                        "data": "",
+                        "method": "GET"
+                      }
+                    },
+                    "version": "v0"
+                  },
+                  "refId": "A"
+                }
+              }
+            ],
+            "queryOptions": {},
+            "transformations": []
+          }
+        },
+        "description": "",
+        "id": 9,
+        "links": [],
+        "title": "Answer latency over time (each point = one answered check)",
+        "vizConfig": {
+          "group": "timeseries",
+          "kind": "VizConfig",
+          "spec": {
+            "fieldConfig": {
+              "defaults": {
+                "color": {
+                  "fixedColor": "blue",
+                  "mode": "fixed"
+                },
+                "custom": {
+                  "axisBorderShow": false,
+                  "axisCenteredZero": false,
+                  "axisColorMode": "text",
+                  "axisLabel": "",
+                  "axisPlacement": "auto",
+                  "barAlignment": 0,
+                  "barWidthFactor": 0.6,
+                  "drawStyle": "points",
+                  "fillOpacity": 0,
+                  "gradientMode": "none",
+                  "hideFrom": {
+                    "legend": false,
+                    "tooltip": false,
+                    "viz": false
+                  },
+                  "insertNulls": false,
+                  "lineInterpolation": "linear",
+                  "lineWidth": 0,
+                  "pointSize": 6,
+                  "scaleDistribution": {
+                    "type": "linear"
+                  },
+                  "showPoints": "always",
+                  "showValues": false,
+                  "spanNulls": false,
+                  "stacking": {
+                    "group": "A",
+                    "mode": "none"
+                  },
+                  "thresholdsStyle": {
+                    "mode": "off"
+                  }
+                },
+                "thresholds": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green",
+                      "value": 0
+                    },
+                    {
+                      "color": "red",
+                      "value": 80
+                    }
+                  ]
+                },
+                "unit": "s"
+              },
+              "overrides": []
+            },
+            "options": {
+              "annotations": {
+                "clustering": -1,
+                "multiLane": false
+              },
+              "legend": {
+                "calcs": [],
+                "displayMode": "list",
+                "enableFacetedFilter": false,
+                "overflow": "ellipsis",
+                "placement": "bottom",
+                "showLegend": true
+              },
+              "tooltip": {
+                "hideZeros": false,
+                "mode": "single",
+                "sort": "none"
+              }
+            }
+          },
+          "version": "13.2.0-29079983887"
+        }
+      }
+    }
+  },
+  "layout": {
+    "kind": "RowsLayout",
+    "spec": {
+      "rows": [
+        {
+          "kind": "RowsLayoutRow",
+          "spec": {
+            "collapse": false,
+            "layout": {
+              "kind": "GridLayout",
+              "spec": {
+                "items": [
+                  {
+                    "kind": "GridLayoutItem",
+                    "spec": {
+                      "element": {
+                        "kind": "ElementReference",
+                        "name": "panel-2"
+                      },
+                      "height": 4,
+                      "width": 6,
+                      "x": 0,
+                      "y": 0
+                    }
+                  },
+                  {
+                    "kind": "GridLayoutItem",
+                    "spec": {
+                      "element": {
+                        "kind": "ElementReference",
+                        "name": "panel-3"
+                      },
+                      "height": 4,
+                      "width": 6,
+                      "x": 6,
+                      "y": 0
+                    }
+                  },
+                  {
+                    "kind": "GridLayoutItem",
+                    "spec": {
+                      "element": {
+                        "kind": "ElementReference",
+                        "name": "panel-4"
+                      },
+                      "height": 4,
+                      "width": 6,
+                      "x": 12,
+                      "y": 0
+                    }
+                  },
+                  {
+                    "kind": "GridLayoutItem",
+                    "spec": {
+                      "element": {
+                        "kind": "ElementReference",
+                        "name": "panel-5"
+                      },
+                      "height": 4,
+                      "width": 6,
+                      "x": 18,
+                      "y": 0
+                    }
+                  }
+                ]
+              }
+            },
+            "title": "Overview"
+          }
+        },
+        {
+          "kind": "RowsLayoutRow",
+          "spec": {
+            "collapse": false,
+            "layout": {
+              "kind": "GridLayout",
+              "spec": {
+                "items": [
+                  {
+                    "kind": "GridLayoutItem",
+                    "spec": {
+                      "element": {
+                        "kind": "ElementReference",
+                        "name": "panel-7"
+                      },
+                      "height": 8,
+                      "width": 8,
+                      "x": 0,
+                      "y": 0
+                    }
+                  },
+                  {
+                    "kind": "GridLayoutItem",
+                    "spec": {
+                      "element": {
+                        "kind": "ElementReference",
+                        "name": "panel-8"
+                      },
+                      "height": 8,
+                      "width": 16,
+                      "x": 8,
+                      "y": 0
+                    }
+                  },
+                  {
+                    "kind": "GridLayoutItem",
+                    "spec": {
+                      "element": {
+                        "kind": "ElementReference",
+                        "name": "panel-9"
+                      },
+                      "height": 7,
+                      "width": 24,
+                      "x": 0,
+                      "y": 8
+                    }
+                  }
+                ]
+              }
+            },
+            "title": "Activity"
+          }
+        },
+        {
+          "kind": "RowsLayoutRow",
+          "spec": {
+            "collapse": false,
+            "layout": {
+              "kind": "GridLayout",
+              "spec": {
+                "items": [
+                  {
+                    "kind": "GridLayoutItem",
+                    "spec": {
+                      "element": {
+                        "kind": "ElementReference",
+                        "name": "panel-11"
+                      },
+                      "height": 7,
+                      "width": 24,
+                      "x": 0,
+                      "y": 0
+                    }
+                  }
+                ]
+              }
+            },
+            "title": "Users"
+          }
+        }
+      ]
+    }
+  },
+  "links": [],
+  "liveNow": false,
+  "preload": false,
+  "tags": [
+    "chatcheckbot",
+    "waterbot"
+  ],
+  "timeSettings": {
+    "autoRefresh": "1m",
+    "autoRefreshIntervals": [
+      "5s",
+      "10s",
+      "30s",
+      "1m",
+      "5m",
+      "15m",
+      "30m",
+      "1h",
+      "2h",
+      "1d"
+    ],
+    "fiscalYearStartMonth": 0,
+    "from": "now-30d",
+    "hideTimepicker": false,
+    "timezone": "browser",
+    "to": "now"
+  },
+  "title": "Water Bot",
+  "variables": [
+    {
+      "kind": "TextVariable",
+      "spec": {
+        "current": {
+          "text": "https://colozauq4va56unxug5yorssdu0umiov.lambda-url.eu-central-1.on.aws/",
+          "value": "https://colozauq4va56unxug5yorssdu0umiov.lambda-url.eu-central-1.on.aws/"
+        },
+        "description": "Base URL of the stats Function URL (terraform output -raw stats_url). Include the trailing slash.",
+        "hide": "dontHide",
+        "label": "Stats base URL",
+        "name": "stats_url",
+        "query": "https://colozauq4va56unxug5yorssdu0umiov.lambda-url.eu-central-1.on.aws/",
+        "skipUrlSync": false
+      }
+    }
+  ]
+}
