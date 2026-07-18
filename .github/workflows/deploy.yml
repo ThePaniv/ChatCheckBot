@@ -1,8 +1,8 @@
 name: Deploy to Lambda
 
-# Lints + tests, then builds the image, pushes it to ECR, and points both
-# Lambda functions (webhook + cron) at the new image. Runs on every push to
-# `develop` (i.e. every merge) and can also be run manually. The deploy only
+# Lints + tests, then builds the image, pushes it to ECR, and points all three
+# Lambda functions (webhook + cron + stats) at the new image. Runs on every push
+# to `develop` (i.e. every merge) and can also be run manually. The deploy only
 # happens if lint + tests pass.
 #
 # AWS is reached with the `github-cli` IAM user's access key, mounted as the
@@ -78,14 +78,14 @@ jobs:
           # Pass the immutable, commit-pinned URI to later steps.
           echo "image=$IMAGE" >> "$GITHUB_OUTPUT"
 
-      - name: Roll both Lambdas to the new image
+      - name: Roll all Lambdas to the new image
         env:
           IMAGE: ${{ steps.build.outputs.image }}
         run: |
           set -euo pipefail
-          for fn in water_bot_webhook water_bot_cron; do
+          for fn in water_bot_webhook water_bot_cron water_bot_stats; do
             aws lambda update-function-code --function-name "$fn" --image-uri "$IMAGE"
           done
-          for fn in water_bot_webhook water_bot_cron; do
+          for fn in water_bot_webhook water_bot_cron water_bot_stats; do
             aws lambda wait function-updated --function-name "$fn"
           done
