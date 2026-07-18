@@ -16,7 +16,7 @@ from telegram import (
     ReplyKeyboardMarkup,
     Update,
 )
-from telegram.error import Forbidden
+from telegram.error import BadRequest, Forbidden
 from telegram.ext import (
     Application,
     CallbackQueryHandler,
@@ -249,18 +249,20 @@ async def _process_update(payload: dict):
 def webhook_handler(event, context):
     headers = event.get("headers") or {}
     secret = headers.get("x-telegram-bot-api-secret-token", "")
-    if not hmac.compare_digest(secret, WEBHOOK_SECRET):
+    # Compare on bytes: hmac.compare_digest raises TypeError on a non-ASCII str,
+    # which on this attacker-reachable header would escape as a 500, not a 403.
+    if not hmac.compare_digest(secret.encode(), WEBHOOK_SECRET.encode()):
         return {"statusCode": 403, "body": "Forbidden"}
 
-    body = event.get("body") or "{}"
-    if event.get("isBase64Encoded"):
-        body = base64.b64decode(body).decode("utf-8")
-
     try:
+        body = event.get("body") or "{}"
+        if event.get("isBase64Encoded"):
+            body = base64.b64decode(body).decode("utf-8")
         _loop.run_until_complete(_process_update(json.loads(body)))
     except Exception:
-        # Return 200 regardless: a non-200 makes Telegram retry the same
-        # update, which would wedge the webhook on a poison message.
+        # Return 200 regardless: a non-200 makes Telegram retry the same update,
+        # which would wedge the webhook on a poison message. The base64/utf-8
+        # decode is inside the try for the same reason.
         logger.exception("Failed to process update")
     return {"statusCode": 200, "body": "OK"}
 
@@ -278,26 +280,30 @@ async def _tick():
             # would crash int() below; skip it rather than wedge the whole tick.
             logger.warning("Due user %s has no chat_id; skipping", user_id)
             continue
-        chat_id = int(chat_id)
-        frequency = int(user["frequency_seconds"])
-        # Close out the previous prompt as ignored if it was never answered.
-        pending = user.get("pending_check")
-        if pending:
-            db.log_check(user_id, str(pending), "ignored")
-        checked_at = str(now)
+        # Everything below is inside the try so one bad row or transient write
+        # error (a bad frequency_seconds, a DynamoDB blip) can't abort the whole
+        # remaining batch — the user is just skipped and retried on the next tick.
         try:
+            checked_at = str(now)
             await app.bot.send_message(
-                chat_id=chat_id, text=PROMPT_TEXT, reply_markup=_water_keyboard(checked_at)
+                chat_id=int(chat_id), text=PROMPT_TEXT, reply_markup=_water_keyboard(checked_at)
             )
-            # Advance the schedule only after a confirmed send, inside the same
-            # try: if this write fails the user stays due and is retried next
-            # tick (at worst a duplicate), never silently dropped mid-batch.
-            db.mark_sent(user_id, checked_at, now + frequency)
-        except Forbidden:
-            logger.info("User %s blocked the bot; deactivating", user_id)
+            # Advance the schedule only after a confirmed send. mark_sent swaps
+            # pending_check atomically and returns the PRIOR open prompt (when the
+            # user is still active); close that one as ignored. Closing via
+            # mark_sent's ALL_OLD — not the stale scan value — means a concurrent
+            # answer isn't clobbered and a closed check isn't rewritten.
+            old_pending = db.mark_sent(user_id, checked_at, now + int(user["frequency_seconds"]))
+            db.close_pending(user_id, old_pending)
+        except (Forbidden, BadRequest):
+            # Blocked, or a permanent bad-chat error (e.g. stale chat_id):
+            # deactivate (not delete) so the user stops re-appearing in
+            # get_due_users every tick. mark_sent didn't run, so nothing to undo.
+            logger.info("User %s unreachable; deactivating", user_id)
             db.deactivate_user(user_id)
         except Exception:
-            # Leave next_check_at due so this user is retried on the next tick.
+            # Transient error: leave next_check_at due so this user is retried on
+            # the next tick, never silently dropped mid-batch.
             logger.exception("Failed to process user %s", user_id)
 
 
@@ -402,7 +408,9 @@ def _users_view(users: list[dict]) -> list[dict]:
 def stats_handler(event, context):
     headers = event.get("headers") or {}
     auth = headers.get("authorization", "")
-    if not hmac.compare_digest(auth, f"Bearer {_get_stats_token()}"):
+    # Byte comparison: a non-ASCII Authorization header would make the str form
+    # of compare_digest raise TypeError (a 500) instead of returning 403.
+    if not hmac.compare_digest(auth.encode(), f"Bearer {_get_stats_token()}".encode()):
         return {"statusCode": 403, "body": "Forbidden"}
 
     params = event.get("queryStringParameters") or {}

@@ -15,26 +15,39 @@ def _make_db():
     return db, users_table, logs_table
 
 
-def test_register_user_stores_stringified_id_and_active_flag():
+def test_register_user_upserts_profile_without_touching_schedule():
     db, users_table, _ = _make_db()
     db.register_user(
         user_id=42, chat_id="42", phone="+380000000000", first_name="Ann", username="ann_k"
     )
-    item = users_table.put_item.call_args.kwargs["Item"]
-    assert item["user_id"] == "42"
-    assert item["chat_id"] == 42
-    assert item["active"] is True
-    assert item["username"] == "ann_k"
-    # Not scheduled until the user picks a frequency, so they aren't prompted yet.
-    assert "next_check_at" not in item
+    # An upsert, not a put_item — put_item replaces the whole row and would wipe
+    # frequency_seconds/next_check_at/pending_check when /start is re-run.
+    users_table.put_item.assert_not_called()
+    kwargs = users_table.update_item.call_args.kwargs
+    assert kwargs["Key"] == {"user_id": "42"}
+    expr = kwargs["UpdateExpression"]
+    assert "chat_id = :c" in expr
+    assert "username = :u" in expr
+    # Scheduling fields are never mentioned, so they survive re-registration.
+    assert "next_check_at" not in expr
+    assert "frequency_seconds" not in expr
+    assert "pending_check" not in expr
+    # registered_at / active are seeded only on first write.
+    assert "if_not_exists(registered_at" in expr
+    assert "if_not_exists(active" in expr
+    vals = kwargs["ExpressionAttributeValues"]
+    assert vals[":c"] == 42
+    assert vals[":u"] == "ann_k"
+    assert vals[":t"] is True
 
 
 def test_register_user_omits_username_when_absent():
     db, users_table, _ = _make_db()
     # Telegram users aren't required to have a username; don't write an empty one.
     db.register_user(user_id=42, chat_id="42", phone="+380000000000", first_name="Ann")
-    item = users_table.put_item.call_args.kwargs["Item"]
-    assert "username" not in item
+    kwargs = users_table.update_item.call_args.kwargs
+    assert "username" not in kwargs["UpdateExpression"]
+    assert ":u" not in kwargs["ExpressionAttributeValues"]
 
 
 def test_set_frequency_records_schedule_and_clears_pending():

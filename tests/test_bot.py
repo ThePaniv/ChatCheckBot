@@ -4,7 +4,7 @@ import asyncio
 from unittest import mock
 
 import pytest
-from telegram.error import Forbidden
+from telegram.error import BadRequest, Forbidden
 
 from chatcheck_bot import bot
 
@@ -149,6 +149,133 @@ def test_cancel_command_when_nothing_scheduled(monkeypatch):
     assert "немає" in update.message.reply_text.await_args.args[0].lower()
 
 
+def test_start_offers_contact_share_button():
+    update = mock.Mock()
+    update.message.reply_text = mock.AsyncMock()
+    asyncio.run(bot.start(update, None))
+    update.message.reply_text.assert_awaited_once()
+    button = update.message.reply_text.await_args.kwargs["reply_markup"].keyboard[0][0]
+    # request_contact is the only thing that surfaces Telegram's share button.
+    assert button.request_contact is True
+
+
+def test_handle_contact_rejects_forwarded_contact(monkeypatch):
+    fake_db = mock.Mock()
+    monkeypatch.setattr(bot, "db", fake_db)
+    update = mock.Mock()
+    update.message.contact.user_id = 999  # someone else's card
+    update.message.from_user.id = 42
+    update.message.reply_text = mock.AsyncMock()
+
+    asyncio.run(bot.handle_contact(update, None))
+
+    fake_db.register_user.assert_not_called()
+    assert "власним" in update.message.reply_text.await_args.args[0].lower()
+
+
+def test_handle_contact_registers_own_contact_and_prompts(monkeypatch):
+    fake_db = mock.Mock()
+    monkeypatch.setattr(bot, "db", fake_db)
+    update = mock.Mock()
+    update.message.contact.user_id = 42
+    update.message.contact.phone_number = "+380111111111"
+    update.message.contact.first_name = "Ann"
+    update.message.from_user.id = 42
+    update.message.from_user.username = "ann_u"
+    update.message.chat_id = 555
+    update.message.reply_text = mock.AsyncMock()
+
+    asyncio.run(bot.handle_contact(update, None))
+
+    fake_db.register_user.assert_called_once_with(
+        user_id=42, chat_id=555, phone="+380111111111", first_name="Ann", username="ann_u"
+    )
+    calls = update.message.reply_text.await_args_list
+    assert len(calls) == 2
+    # First reply carries the panel WITHOUT Cancel (no schedule yet).
+    panel = calls[0].kwargs["reply_markup"]
+    assert [b.text for row in panel.keyboard for b in row] == [bot.BTN_FREQUENCY]
+    # Second reply is the frequency picker.
+    picker = calls[1].kwargs["reply_markup"].inline_keyboard
+    datas = {b.callback_data for row in picker for b in row}
+    assert datas == {"freq:60", "freq:10800", "freq:43200", "freq:86400"}
+
+
+def _water_tap(monkeypatch, data, answer_result):
+    fake_db = mock.Mock()
+    fake_db.answer_check.return_value = answer_result
+    monkeypatch.setattr(bot, "db", fake_db)
+    query = mock.Mock()
+    query.data = data
+    query.from_user.id = 42
+    query.answer = mock.AsyncMock()
+    query.edit_message_text = mock.AsyncMock()
+    asyncio.run(bot.handle_water_response(mock.Mock(callback_query=query), None))
+    return fake_db, query
+
+
+def test_handle_water_response_records_yes(monkeypatch):
+    fake_db, query = _water_tap(monkeypatch, "water:yes:1000000", True)
+    fake_db.answer_check.assert_called_once_with(42, "1000000", "yes")
+    assert "достатньо" in query.edit_message_text.await_args.kwargs["text"]
+
+
+def test_handle_water_response_records_no(monkeypatch):
+    _, query = _water_tap(monkeypatch, "water:no:1000000", True)
+    assert "склянку" in query.edit_message_text.await_args.kwargs["text"]
+
+
+def test_handle_water_response_rejects_stale_tap(monkeypatch):
+    _, query = _water_tap(monkeypatch, "water:yes:1000000", False)
+    assert "застаріле" in query.edit_message_text.await_args.kwargs["text"]
+
+
+def test_frequency_choice_deactivates_when_blocked(monkeypatch):
+    # User blocked the bot between registering and picking a frequency: the
+    # immediate first send raises Forbidden → deactivate, no schedule, no panel.
+    fake_db = mock.Mock()
+    fake_db.set_frequency.return_value = True
+    monkeypatch.setattr(bot, "db", fake_db)
+    monkeypatch.setattr(bot.time, "time", lambda: 1_000_000)
+    query = mock.Mock()
+    query.data = "freq:60"
+    query.from_user.id = 42
+    query.answer = mock.AsyncMock()
+    query.edit_message_text = mock.AsyncMock()
+    update = mock.Mock(callback_query=query)
+    update.effective_chat.id = 555
+    context = mock.Mock()
+    context.bot.send_message = mock.AsyncMock(side_effect=Forbidden("blocked"))
+
+    asyncio.run(bot.handle_frequency_choice(update, context))
+
+    fake_db.deactivate_user.assert_called_once_with(42)
+    fake_db.mark_sent.assert_not_called()
+    context.bot.send_message.assert_awaited_once()  # only the prompt; no panel refresh
+
+
+def test_frequency_choice_ignores_retired_button(monkeypatch):
+    # callback_data matches ^freq:\d+$ but isn't a current FREQUENCIES key (a
+    # stale button in an old message): acknowledged, but no DB writes / sends.
+    fake_db = mock.Mock()
+    monkeypatch.setattr(bot, "db", fake_db)
+    query = mock.Mock()
+    query.data = "freq:1"
+    query.from_user.id = 42
+    query.answer = mock.AsyncMock()
+    query.edit_message_text = mock.AsyncMock()
+    context = mock.Mock()
+    context.bot.send_message = mock.AsyncMock()
+
+    asyncio.run(bot.handle_frequency_choice(mock.Mock(callback_query=query), context))
+
+    query.answer.assert_awaited_once()
+    fake_db.set_frequency.assert_not_called()
+    fake_db.mark_sent.assert_not_called()
+    context.bot.send_message.assert_not_awaited()
+    query.edit_message_text.assert_not_awaited()
+
+
 @pytest.fixture
 def stub_bot(monkeypatch):
     async def _noop():
@@ -169,6 +296,7 @@ def stub_bot(monkeypatch):
 def test_tick_prompts_due_user_and_marks_sent(stub_bot):
     fake_db, send = stub_bot
     fake_db.get_due_users.return_value = [{"user_id": "1", "chat_id": 111, "frequency_seconds": 60}]
+    fake_db.mark_sent.return_value = None  # no prior open prompt to close
     asyncio.run(bot._tick())
 
     send.assert_awaited_once()
@@ -180,22 +308,35 @@ def test_tick_prompts_due_user_and_marks_sent(stub_bot):
     ]
     assert all(d.startswith("water:") for d in datas)
     fake_db.mark_sent.assert_called_once()
-    fake_db.log_check.assert_not_called()  # nothing pending to close out
+    # Whatever mark_sent returned (here: nothing) is handed to close_pending.
+    fake_db.close_pending.assert_called_once_with("1", None)
 
 
-def test_tick_closes_unanswered_pending_as_ignored(stub_bot):
+def test_tick_closes_prior_open_prompt_via_mark_sent(stub_bot):
     fake_db, _ = stub_bot
-    fake_db.get_due_users.return_value = [
-        {"user_id": "1", "chat_id": 111, "frequency_seconds": 60, "pending_check": "999"}
-    ]
+    fake_db.get_due_users.return_value = [{"user_id": "1", "chat_id": 111, "frequency_seconds": 60}]
+    # mark_sent atomically swaps pending_check and returns the prior open prompt;
+    # the tick closes exactly that (never the stale scan value).
+    fake_db.mark_sent.return_value = "999"
     asyncio.run(bot._tick())
-    fake_db.log_check.assert_called_once_with("1", "999", "ignored")
+    fake_db.close_pending.assert_called_once_with("1", "999")
     fake_db.mark_sent.assert_called_once()
 
 
 def test_tick_deactivates_blocked_user_and_does_not_mark_sent(stub_bot):
     fake_db, send = stub_bot
     send.side_effect = Forbidden("blocked")
+    fake_db.get_due_users.return_value = [{"user_id": "1", "chat_id": 111, "frequency_seconds": 60}]
+    asyncio.run(bot._tick())
+    fake_db.deactivate_user.assert_called_once_with("1")
+    fake_db.mark_sent.assert_not_called()
+
+
+def test_tick_deactivates_on_bad_request(stub_bot):
+    # A permanent bad-chat error (e.g. stale chat_id) is terminal, not transient:
+    # deactivate so the user stops re-appearing every tick.
+    fake_db, send = stub_bot
+    send.side_effect = BadRequest("chat not found")
     fake_db.get_due_users.return_value = [{"user_id": "1", "chat_id": 111, "frequency_seconds": 60}]
     asyncio.run(bot._tick())
     fake_db.deactivate_user.assert_called_once_with("1")
