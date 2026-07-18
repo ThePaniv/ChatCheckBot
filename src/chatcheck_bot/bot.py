@@ -137,9 +137,10 @@ async def handle_frequency_choice(update: Update, context: ContextTypes.DEFAULT_
     if choice is None:
         return  # stale/retired button; the tap is already acknowledged
     _, phrase = choice
-    # Schedule the first prompt one interval out (so the 1-minute test fires
-    # within a minute, and a daily user isn't pinged the instant they choose).
-    next_check_at = int(time.time()) + seconds
+    # Make the first check due now: the next tick (≤60s away) sends the first
+    # prompt, then advances next_check_at by the frequency — so the cadence is
+    # counted from the first check, not from the moment of selection.
+    next_check_at = int(time.time())
     if db.set_frequency(query.from_user.id, seconds, next_check_at):
         await query.edit_message_text(f"Готово! Тепер нагадуватиму {phrase}. 💧")
     else:

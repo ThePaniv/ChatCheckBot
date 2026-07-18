@@ -46,6 +46,28 @@ def test_menu_button_routes_to_frequency_command():
     assert not match.filter(mock.Mock(text="будь-який інший текст"))
 
 
+def test_frequency_choice_schedules_first_check_immediately(monkeypatch):
+    # Picking a frequency makes the first check due NOW (the next tick prompts
+    # it), with the cadence counted from that first check — not one full
+    # interval after the moment of selection.
+    fake_db = mock.Mock()
+    fake_db.set_frequency.return_value = True
+    monkeypatch.setattr(bot, "db", fake_db)
+    monkeypatch.setattr(bot.time, "time", lambda: 1_000_000)
+
+    query = mock.Mock()
+    query.data = "freq:10800"
+    query.from_user.id = 42
+    query.answer = mock.AsyncMock()
+    query.edit_message_text = mock.AsyncMock()
+    update = mock.Mock(callback_query=query)
+
+    asyncio.run(bot.handle_frequency_choice(update, None))
+
+    # next_check_at == now (1_000_000), NOT now + 10800.
+    fake_db.set_frequency.assert_called_once_with(42, 10800, 1_000_000)
+
+
 @pytest.fixture
 def stub_bot(monkeypatch):
     async def _noop():
