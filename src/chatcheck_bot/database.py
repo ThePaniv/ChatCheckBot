@@ -61,23 +61,37 @@ class WaterBotDB:
                 return False
             raise
 
+    @staticmethod
+    def _scan_all(table, **scan_kwargs):
+        # Page through an entire table (or a filtered subset), following
+        # LastEvaluatedKey until DynamoDB stops handing one back.
+        items = []
+        while True:
+            response = table.scan(**scan_kwargs)
+            items.extend(response.get("Items", []))
+            last_key = response.get("LastEvaluatedKey")
+            if not last_key:
+                return items
+            scan_kwargs["ExclusiveStartKey"] = last_key
+
     def get_due_users(self, now_epoch):
         # Active, onboarded (has next_check_at) users whose next prompt is due.
-        users = []
-        scan_kwargs = {
-            "FilterExpression": (
+        return self._scan_all(
+            self.users_table,
+            FilterExpression=(
                 Attr("active").eq(True)
                 & Attr("next_check_at").exists()
                 & Attr("next_check_at").lte(int(now_epoch))
-            )
-        }
-        while True:
-            response = self.users_table.scan(**scan_kwargs)
-            users.extend(response.get("Items", []))
-            last_key = response.get("LastEvaluatedKey")
-            if not last_key:
-                return users
-            scan_kwargs["ExclusiveStartKey"] = last_key
+            ),
+        )
+
+    def scan_all_users(self):
+        # Every user row — for the read-only stats/dashboard endpoint.
+        return self._scan_all(self.users_table)
+
+    def scan_all_logs(self):
+        # Every check-log row — for the read-only stats/dashboard endpoint.
+        return self._scan_all(self.logs_table)
 
     def mark_sent(self, user_id, checked_at, next_check_at):
         self.users_table.update_item(
@@ -97,14 +111,17 @@ class WaterBotDB:
         )
 
     def log_check(self, user_id, checked_at, status):
-        # checked_at (epoch seconds, when the prompt was sent) is the sort key
-        # and doubles as the answer callback's token — it's the row's single
-        # timestamp, so there's no separate updated_at.
+        # checked_at (epoch seconds) is the sort key and the answer callback's
+        # token — it's WHEN THE PROMPT WAS SENT. updated_at is WHEN THE ROW WAS
+        # WRITTEN: the moment the user tapped Так/Ні (yes/no), or the moment the
+        # tick closed an unanswered prompt as `ignored`. The gap between the two
+        # is the user's response latency.
         self.logs_table.put_item(
             Item={
                 "user_id": str(user_id),
                 "checked_at": str(checked_at),
                 "status": status,
+                "updated_at": _now_iso(),
             }
         )
 

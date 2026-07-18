@@ -59,6 +59,7 @@ data "aws_iam_policy_document" "lambda_deploy" {
     resources = [
       aws_lambda_function.webhook.arn,
       aws_lambda_function.cron.arn,
+      aws_lambda_function.stats.arn,
     ]
   }
 }

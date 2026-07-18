@@ -9,9 +9,11 @@ is active during collection, whichever test module is imported first.
 from unittest import mock
 
 WEBHOOK_SECRET = "test-webhook-secret"
+STATS_TOKEN = "test-stats-token"
 _PARAMS = {
     "/telegram/bot_token": "123456:TEST-TOKEN",
     "/telegram/webhook_secret": WEBHOOK_SECRET,
+    "/telegram/stats_token": STATS_TOKEN,
 }
 
 

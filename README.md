@@ -7,7 +7,8 @@ A Ukrainian-language Telegram bot that registers users via contact sharing and r
 - **Webhook path:** Telegram → **Lambda Function URL** → `chatcheck_bot.bot.webhook_handler` — handles `/start`, contact registration, `/frequency`, a pinned «⏰ Змінити частоту» menu button, the frequency picker, and the Так/Ні answer taps. (Function URLs are free forever; API Gateway's free tier expires after 12 months.)
 - **Tick path:** **EventBridge Scheduler** fires `chatcheck_bot.bot.cron_handler` every minute (`rate(1 minute)`). Each tick prompts only the users whose next check is **due** (`next_check_at <= now`), closes out an unanswered previous prompt as `ignored`, and advances `next_check_at` by that user's frequency.
 - Both handlers ship in the **same Docker image**; each Lambda overrides the entrypoint via `image_config.command`.
-- **DynamoDB** (on-demand): `WaterBotUsers` (PK `user_id`; holds `frequency_seconds`, `next_check_at`, `pending_check`) and `WaterBotLogs` (PK `user_id`, SK `checked_at` — one row per prompt; `checked_at` is the send-time epoch and the row's only timestamp).
+- **DynamoDB** (on-demand): `WaterBotUsers` (PK `user_id`; holds `frequency_seconds`, `next_check_at`, `pending_check`, and the Telegram `username`) and `WaterBotLogs` (PK `user_id`, SK `checked_at` — one row per prompt; `checked_at` is the send-time epoch, and `updated_at` (ISO) records when the row was written — the answer tap, or the tick closing it as `ignored`).
+- **Stats path:** a third Lambda (`chatcheck_bot.bot.stats_handler`) behind its own **Function URL** serves read-only aggregated JSON for a **Grafana Cloud** dashboard (see [Dashboard](#dashboard)). Bearer-token auth; the same image as the other two handlers.
 - **SSM Parameter Store** (SecureString): bot token and webhook secret.
 - Webhook requests are authenticated by comparing Telegram's `X-Telegram-Bot-Api-Secret-Token` header against the stored secret; everything else gets a 403.
 
@@ -89,6 +90,51 @@ docker build --platform linux/amd64 -t $REPO:latest . && docker push $REPO:lates
 aws lambda update-function-code --function-name water_bot_webhook --image-uri $REPO:latest
 aws lambda update-function-code --function-name water_bot_cron --image-uri $REPO:latest
 ```
+
+## Dashboard
+
+Bot activity is visualized in **Grafana Cloud (free tier)** via the read-only stats
+endpoint — an extra Lambda + Function URL that scans both tables and returns aggregated
+JSON. No new AWS running cost (a handful of extra DynamoDB scans); Grafana Cloud's free
+tier hosts and shares the dashboard.
+
+The endpoint (Terraform output `stats_url`) takes a `view` query parameter and requires a
+bearer token (output `stats_token`):
+
+```bash
+cd infra
+STATS_URL=$(terraform output -raw stats_url)
+STATS_TOKEN=$(terraform output -raw stats_token)
+
+curl -H "Authorization: Bearer $STATS_TOKEN" "${STATS_URL}?view=summary"
+```
+
+| `?view=` | Shape | Use |
+|---|---|---|
+| `summary` (default) | one row of totals | total/active users, yes/no/ignored counts, response rate |
+| `logs` | one row per check | time series of answers; `checked_at` (sent), `answered_at`, `latency_seconds`, joined user name |
+| `users` | one row per user | per-user frequency, next check, active flag |
+
+### Wire it into Grafana Cloud
+
+1. Create a free account at [grafana.com](https://grafana.com/) and open your stack.
+2. **Connections → Add new connection → Infinity** (install the plugin if prompted), then
+   add an **Infinity** datasource. Under **Authentication**, add an HTTP header
+   `Authorization` = `Bearer <stats_token>` (or use the Bearer-token auth field) so the
+   token is stored in Grafana, not in every panel.
+3. Add a panel; datasource **Infinity**, type **JSON**, method **GET**, URL
+   `<stats_url>?view=summary` (or `logs` / `users`). Set **Parsing options → Rows/Root** to
+   the array root and let it infer columns.
+   - **Stat** panels off `summary` for the headline numbers.
+   - A **Time series** off `logs`: set the time field to `checked_at` (format **Unix ns/s**
+     → seconds), group/count by `status`.
+   - A **Table** off `users` for the per-user list.
+4. **Share:** open the dashboard → **Share → Public dashboard** to get a link anyone can open.
+
+> ⚠️ A **public** dashboard makes whatever it displays world-readable. The `summary` view is
+> anonymized (counts only); the `logs`/`users` views include first names and usernames. Keep
+> per-user panels off any dashboard you publish publicly, or share it only with signed-in
+> members of your Grafana org instead.
 
 ## Cost
 

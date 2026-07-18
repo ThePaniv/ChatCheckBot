@@ -90,15 +90,30 @@ def test_mark_sent_sets_pending_and_next_check():
     assert kwargs["ExpressionAttributeValues"] == {":c": "1752777300", ":n": 1752788100}
 
 
-def test_log_check_uses_checked_at_sort_key_and_no_duplicate_timestamp():
+def test_log_check_records_checked_at_and_answer_time():
     db, _, logs_table = _make_db()
     db.log_check(7, "1752777300", "yes")
     item = logs_table.put_item.call_args.kwargs["Item"]
     assert item["user_id"] == "7"
     assert item["checked_at"] == "1752777300"
     assert item["status"] == "yes"
-    # checked_at is the only timestamp — no redundant updated_at.
-    assert "updated_at" not in item
+    # updated_at is when the row was written (the answer/close moment) — a
+    # distinct timestamp from checked_at (when the prompt was sent).
+    assert item["updated_at"]
+    assert item["updated_at"] != item["checked_at"]
+
+
+def test_scan_all_users_and_logs_paginate():
+    db, users_table, logs_table = _make_db()
+    users_table.scan.side_effect = [
+        {"Items": [{"user_id": "1"}], "LastEvaluatedKey": {"user_id": "1"}},
+        {"Items": [{"user_id": "2"}]},
+    ]
+    logs_table.scan.side_effect = [{"Items": [{"user_id": "1", "checked_at": "10"}]}]
+    assert [u["user_id"] for u in db.scan_all_users()] == ["1", "2"]
+    assert db.scan_all_logs() == [{"user_id": "1", "checked_at": "10"}]
+    # Full scans carry no FilterExpression (unlike get_due_users).
+    assert "FilterExpression" not in users_table.scan.call_args_list[0].kwargs
 
 
 def test_answer_check_records_only_the_live_prompt():

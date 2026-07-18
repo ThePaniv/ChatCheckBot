@@ -5,6 +5,8 @@ import json
 import logging
 import os
 import time
+from datetime import datetime
+from decimal import Decimal
 
 import boto3
 from telegram import (
@@ -40,6 +42,19 @@ def _get_parameter(name: str) -> str:
 
 TOKEN = _get_parameter(os.getenv("BOT_TOKEN_PARAM", "/telegram/bot_token"))
 WEBHOOK_SECRET = _get_parameter(os.getenv("WEBHOOK_SECRET_PARAM", "/telegram/webhook_secret"))
+
+# The stats bearer token is fetched lazily (only the stats Lambda needs it), so
+# the webhook/cron handlers never require this parameter to exist — a deploy
+# that ships this code before the param is created can't crash the live bot.
+_stats_token = None
+
+
+def _get_stats_token() -> str:
+    global _stats_token
+    if _stats_token is None:
+        _stats_token = _get_parameter(os.getenv("STATS_TOKEN_PARAM", "/telegram/stats_token"))
+    return _stats_token
+
 
 # Check-in cadences the user can pick, keyed by interval in seconds. Each value
 # is (button label, phrase for the confirmation message). The 1-minute option
@@ -245,3 +260,115 @@ async def _tick():
 def cron_handler(event, context):
     _loop.run_until_complete(_tick())
     return {"statusCode": 200, "body": "OK"}
+
+
+# --- Read-only stats endpoint (for a Grafana Cloud "Infinity" JSON datasource) -
+# A third Lambda entry point behind its own Function URL. It scans both tables
+# and returns aggregated JSON. Authenticated by a bearer token (Authorization:
+# Bearer <token>) compared with hmac.compare_digest, so the public URL doesn't
+# leak data. Three views, chosen by ?view=: `summary` (one row of totals),
+# `logs` (one row per check, enriched with the user's name), `users` (one row
+# per user). Grafana points a query at each URL and charts the JSON.
+
+
+def _json_default(o):
+    # DynamoDB returns numbers as Decimal, which json.dumps can't serialize.
+    if isinstance(o, Decimal):
+        return int(o) if o % 1 == 0 else float(o)
+    raise TypeError(f"Object of type {type(o).__name__} is not JSON serializable")
+
+
+def _iso_to_epoch(iso: str | None) -> int | None:
+    if not iso:
+        return None
+    try:
+        return int(datetime.fromisoformat(iso).timestamp())
+    except ValueError:
+        return None
+
+
+def _summary_view(users: list[dict], logs: list[dict]) -> list[dict]:
+    counts = {"yes": 0, "no": 0, "ignored": 0}
+    for log in logs:
+        status = log.get("status")
+        if status in counts:
+            counts[status] += 1
+    total = sum(counts.values())
+    answered = counts["yes"] + counts["no"]
+    return [
+        {
+            "total_users": len(users),
+            "active_users": sum(1 for u in users if u.get("active")),
+            "total_checks": total,
+            "yes": counts["yes"],
+            "no": counts["no"],
+            "ignored": counts["ignored"],
+            "answered": answered,
+            # Share of prompts the user actually answered (yes or no).
+            "response_rate": round(answered / total, 3) if total else 0,
+        }
+    ]
+
+
+def _logs_view(users: list[dict], logs: list[dict]) -> list[dict]:
+    names = {u["user_id"]: u for u in users}
+    rows = []
+    for log in logs:
+        checked_at = int(log["checked_at"])
+        answered_at = _iso_to_epoch(log.get("updated_at"))
+        user = names.get(log["user_id"], {})
+        rows.append(
+            {
+                "user_id": log["user_id"],
+                "first_name": user.get("first_name"),
+                "username": user.get("username"),
+                "status": log["status"],
+                "checked_at": checked_at,  # prompt sent (epoch seconds)
+                "updated_at": log.get("updated_at"),  # answered/closed (ISO)
+                "answered_at": answered_at,  # same, as epoch seconds
+                "latency_seconds": (answered_at - checked_at) if answered_at else None,
+            }
+        )
+    return rows
+
+
+def _users_view(users: list[dict]) -> list[dict]:
+    def as_int(value):
+        return int(value) if value is not None else None
+
+    return [
+        {
+            "user_id": u["user_id"],
+            "first_name": u.get("first_name"),
+            "username": u.get("username"),
+            "active": bool(u.get("active")),
+            "frequency_seconds": as_int(u.get("frequency_seconds")),
+            "next_check_at": as_int(u.get("next_check_at")),
+            "pending_check": u.get("pending_check"),
+        }
+        for u in users
+    ]
+
+
+def stats_handler(event, context):
+    headers = event.get("headers") or {}
+    auth = headers.get("authorization", "")
+    if not hmac.compare_digest(auth, f"Bearer {_get_stats_token()}"):
+        return {"statusCode": 403, "body": "Forbidden"}
+
+    params = event.get("queryStringParameters") or {}
+    view = params.get("view", "summary")
+
+    users = db.scan_all_users()
+    if view == "users":
+        data = _users_view(users)
+    elif view == "logs":
+        data = _logs_view(users, db.scan_all_logs())
+    else:  # summary
+        data = _summary_view(users, db.scan_all_logs())
+
+    return {
+        "statusCode": 200,
+        "headers": {"content-type": "application/json"},
+        "body": json.dumps(data, default=_json_default),
+    }

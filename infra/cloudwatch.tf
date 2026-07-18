@@ -13,3 +13,8 @@ resource "aws_cloudwatch_log_group" "cron" {
   name              = "/aws/lambda/${local.cron_function_name}"
   retention_in_days = var.log_retention_days
 }
+
+resource "aws_cloudwatch_log_group" "stats" {
+  name              = "/aws/lambda/${local.stats_function_name}"
+  retention_in_days = var.log_retention_days
+}

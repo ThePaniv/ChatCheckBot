@@ -9,6 +9,7 @@ locals {
   ssm_param_arns = [
     aws_ssm_parameter.bot_token.arn,
     aws_ssm_parameter.webhook_secret.arn,
+    aws_ssm_parameter.stats_token.arn,
   ]
 }
 

@@ -46,6 +46,12 @@ variable "webhook_secret_param" {
   default     = "/telegram/webhook_secret"
 }
 
+variable "stats_token_param" {
+  description = "SSM SecureString parameter name holding the read-only stats endpoint bearer token"
+  type        = string
+  default     = "/telegram/stats_token"
+}
+
 variable "telegram_bot_token" {
   description = "Telegram bot token from @BotFather. Set it in terraform.tfvars (git-ignored) — never commit it."
   type        = string

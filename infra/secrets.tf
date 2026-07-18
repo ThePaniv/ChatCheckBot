@@ -21,3 +21,17 @@ resource "aws_ssm_parameter" "webhook_secret" {
   type  = "SecureString"
   value = random_password.webhook_secret.result
 }
+
+# Bearer token guarding the read-only stats endpoint (the Grafana Infinity
+# datasource sends it as `Authorization: Bearer <token>`). Generated, never
+# committed; lives only in local state and the stats Lambda's SSM read.
+resource "random_password" "stats_token" {
+  length  = 48
+  special = false
+}
+
+resource "aws_ssm_parameter" "stats_token" {
+  name  = var.stats_token_param
+  type  = "SecureString"
+  value = random_password.stats_token.result
+}

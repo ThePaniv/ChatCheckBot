@@ -3,12 +3,14 @@
 locals {
   webhook_function_name = "water_bot_webhook"
   cron_function_name    = "water_bot_cron"
+  stats_function_name   = "water_bot_stats"
 
   lambda_env = {
     USERS_TABLE          = aws_dynamodb_table.users.name
     LOGS_TABLE           = aws_dynamodb_table.logs.name
     BOT_TOKEN_PARAM      = var.bot_token_param
     WEBHOOK_SECRET_PARAM = var.webhook_secret_param
+    STATS_TOKEN_PARAM    = var.stats_token_param
   }
 }
 
@@ -63,6 +65,29 @@ resource "aws_lambda_function" "cron" {
   depends_on = [aws_cloudwatch_log_group.cron]
 }
 
+resource "aws_lambda_function" "stats" {
+  function_name = local.stats_function_name
+  role          = aws_iam_role.lambda_exec.arn
+  package_type  = "Image"
+  image_uri     = "${aws_ecr_repository.bot.repository_url}:${var.image_tag}"
+  timeout       = 30
+  memory_size   = 512
+
+  image_config {
+    command = ["chatcheck_bot.bot.stats_handler"]
+  }
+
+  environment {
+    variables = local.lambda_env
+  }
+
+  lifecycle {
+    ignore_changes = [image_uri]
+  }
+
+  depends_on = [aws_cloudwatch_log_group.stats]
+}
+
 # --- Webhook ingress: Lambda Function URL (free, no API Gateway needed) -------
 # Authentication is handled in code via Telegram's secret_token header.
 
@@ -90,5 +115,31 @@ resource "aws_lambda_permission" "public_url_invoke" {
   statement_id  = "AllowPublicFunctionUrlInvoke"
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.webhook.function_name
+  principal     = "*"
+}
+
+# --- Stats egress: a second public Function URL --------------------------------
+# Read-only JSON for Grafana's Infinity datasource. Auth NONE at the front door;
+# the handler itself requires an `Authorization: Bearer <stats_token>` header
+# (compared with hmac.compare_digest), so the public URL exposes nothing without
+# the token. Same two-permission grant the webhook needs post-Oct-2025.
+
+resource "aws_lambda_function_url" "stats" {
+  function_name      = aws_lambda_function.stats.function_name
+  authorization_type = "NONE"
+}
+
+resource "aws_lambda_permission" "stats_public_url" {
+  statement_id           = "AllowPublicFunctionUrl"
+  action                 = "lambda:InvokeFunctionUrl"
+  function_name          = aws_lambda_function.stats.function_name
+  principal              = "*"
+  function_url_auth_type = "NONE"
+}
+
+resource "aws_lambda_permission" "stats_public_url_invoke" {
+  statement_id  = "AllowPublicFunctionUrlInvoke"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.stats.function_name
   principal     = "*"
 }
