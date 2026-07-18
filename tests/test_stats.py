@@ -72,6 +72,8 @@ def test_summary_counts_and_response_rate():
     row = data[0]
     assert row["total_users"] == 2
     assert row["active_users"] == 1
+    # user 2 is inactive with no next_check_at → counts as cancelled.
+    assert row["cancelled_users"] == 1
     assert row["total_checks"] == 3
     assert (row["yes"], row["no"], row["ignored"]) == (1, 1, 1)
     assert row["answered"] == 2

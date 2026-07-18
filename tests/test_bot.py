@@ -24,12 +24,16 @@ def test_answer_callback_data_within_telegram_limit():
     assert len("water:no:9999999999") <= 64
 
 
-def test_main_menu_panel_is_persistent_with_both_buttons():
-    menu = bot.MAIN_MENU
-    assert menu.is_persistent is True
-    assert menu.resize_keyboard is True
-    labels = [btn.text for row in menu.keyboard for btn in row]
-    assert labels == [bot.BTN_FREQUENCY, bot.BTN_CANCEL]
+def test_main_menu_hides_cancel_until_scheduled():
+    without = bot._main_menu(with_cancel=False)
+    assert [b.text for row in without.keyboard for b in row] == [bot.BTN_FREQUENCY]
+    with_cancel = bot._main_menu(with_cancel=True)
+    assert [b.text for row in with_cancel.keyboard for b in row] == [
+        bot.BTN_FREQUENCY,
+        bot.BTN_CANCEL,
+    ]
+    assert with_cancel.is_persistent is True
+    assert with_cancel.resize_keyboard is True
 
 
 def _routed_message_handlers(callback):
@@ -78,12 +82,16 @@ def test_frequency_choice_sends_first_check_immediately(monkeypatch):
 
     asyncio.run(bot.handle_frequency_choice(update, context))
 
-    # First prompt sent now, to the user's chat, carrying the water keyboard.
-    context.bot.send_message.assert_awaited_once()
-    kwargs = context.bot.send_message.await_args.kwargs
-    assert kwargs["chat_id"] == 555
-    datas = [b.callback_data for row in kwargs["reply_markup"].inline_keyboard for b in row]
+    calls = context.bot.send_message.await_args_list
+    assert len(calls) == 2
+    # First: the immediate check prompt, to the user's chat, water keyboard.
+    check = calls[0].kwargs
+    assert check["chat_id"] == 555
+    datas = [b.callback_data for row in check["reply_markup"].inline_keyboard for b in row]
     assert datas == ["water:yes:1000000", "water:no:1000000"]
+    # Second: panel refresh exposing the Cancel button now that a schedule exists.
+    panel = calls[1].kwargs["reply_markup"]
+    assert bot.BTN_CANCEL in [b.text for row in panel.keyboard for b in row]
     # Next check scheduled one interval (10800s) after this first prompt.
     fake_db.mark_sent.assert_called_once_with(42, "1000000", 1_000_000 + 10800)
 

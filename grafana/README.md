@@ -2,10 +2,10 @@
 
 [`dashboard.json`](dashboard.json) is an importable Grafana dashboard for the bot's
 read-only stats endpoint (see the [Dashboard section](../README.md#dashboard) of the root
-README for the endpoint itself). It has 11 panels over three rows:
+README for the endpoint itself). It has 12 panels over three rows:
 
-- **Overview** — stat tiles (total users, active users, total checks, response rate) and a
-  donut of the yes/no/ignored breakdown, all off `?view=summary`.
+- **Overview** — stat tiles (total users, active users, cancelled users, total checks,
+  response rate) and a donut of the yes/no/ignored breakdown, all off `?view=summary`.
 - **Activity** — a *Recent checks* table and an *answer-latency-over-time* scatter, off
   `?view=logs`.
 - **Users** — a per-user table (frequency, next check, active), off `?view=users`.

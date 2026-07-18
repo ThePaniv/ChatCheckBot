@@ -75,12 +75,6 @@ PROMPT_TEXT = "Ти вже випив(-ла) достатньо води? 💧"
 BTN_FREQUENCY = "⏰ Змінити частоту"
 BTN_CANCEL = "🛑 Скасувати нагадування"
 
-MAIN_MENU = ReplyKeyboardMarkup(
-    [[KeyboardButton(BTN_FREQUENCY), KeyboardButton(BTN_CANCEL)]],
-    resize_keyboard=True,
-    is_persistent=True,
-)
-
 
 def _frequency_keyboard() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(
@@ -103,6 +97,15 @@ def _water_keyboard(checked_at: str) -> InlineKeyboardMarkup:
             ]
         ]
     )
+
+
+def _main_menu(with_cancel: bool) -> ReplyKeyboardMarkup:
+    # Cancel appears only once the user has a live schedule — there's nothing to
+    # cancel before a frequency is picked, or after cancelling.
+    row = [KeyboardButton(BTN_FREQUENCY)]
+    if with_cancel:
+        row.append(KeyboardButton(BTN_CANCEL))
+    return ReplyKeyboardMarkup([row], resize_keyboard=True, is_persistent=True)
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -134,7 +137,9 @@ async def handle_contact(update: Update, context: ContextTypes.DEFAULT_TYPE):
         first_name=contact.first_name or sender.first_name or "",
         username=sender.username,
     )
-    await update.message.reply_text("Реєстрацію завершено! ✅", reply_markup=MAIN_MENU)
+    await update.message.reply_text(
+        "Реєстрацію завершено! ✅", reply_markup=_main_menu(with_cancel=False)
+    )
     await update.message.reply_text("Як часто тобі нагадувати?", reply_markup=_frequency_keyboard())
 
 
@@ -145,13 +150,13 @@ async def frequency_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def cancel_checks_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    # Stop reminders without unregistering: cancel_checks drops the schedule so
-    # the tick skips this user. They resume by picking a frequency again. The
-    # persistent panel stays put, so "Змінити частоту" is one tap away.
+    # Stop reminders and mark the user inactive (cancel_checks). They resume by
+    # picking a frequency again. Hide the Cancel button now — nothing to cancel.
     if db.cancel_checks(update.effective_user.id):
-        await update.message.reply_text("Нагадування скасовано. Щоб відновити, обери частоту. 🛑")
+        text = "Нагадування скасовано. Щоб відновити, обери частоту. 🛑"
     else:
-        await update.message.reply_text("Активних нагадувань немає. Обери частоту, щоб почати. 💧")
+        text = "Активних нагадувань немає. Обери частоту, щоб почати. 💧"
+    await update.message.reply_text(text, reply_markup=_main_menu(with_cancel=False))
 
 
 async def handle_frequency_choice(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -172,20 +177,25 @@ async def handle_frequency_choice(update: Update, context: ContextTypes.DEFAULT_
         )
         return
     await query.edit_message_text(f"Готово! Тепер нагадуватиму {phrase}. 💧")
+    chat_id = update.effective_chat.id
     # Send the FIRST check right now instead of waiting for the next tick, then
     # advance next_check_at by one interval so the cadence is counted from this
     # first prompt. mark_sent also sets pending_check, so the answer is accepted.
     checked_at = str(now)
     try:
         await context.bot.send_message(
-            chat_id=update.effective_chat.id,
-            text=PROMPT_TEXT,
-            reply_markup=_water_keyboard(checked_at),
+            chat_id=chat_id, text=PROMPT_TEXT, reply_markup=_water_keyboard(checked_at)
         )
     except Forbidden:
         db.deactivate_user(query.from_user.id)
         return
     db.mark_sent(query.from_user.id, checked_at, now + seconds)
+    # Now that reminders are scheduled, reveal the Cancel button on the panel.
+    await context.bot.send_message(
+        chat_id=chat_id,
+        text="Керувати нагадуваннями — кнопками внизу. 👇",
+        reply_markup=_main_menu(with_cancel=True),
+    )
 
 
 async def handle_water_response(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -333,6 +343,11 @@ def _summary_view(users: list[dict], logs: list[dict]) -> list[dict]:
         {
             "total_users": len(users),
             "active_users": sum(1 for u in users if u.get("active")),
+            # Registered users who cancelled: inactive AND unscheduled. A blocked
+            # user is inactive but keeps next_check_at, so this excludes them.
+            "cancelled_users": sum(
+                1 for u in users if not u.get("active") and u.get("next_check_at") is None
+            ),
             "total_checks": total,
             "yes": counts["yes"],
             "no": counts["no"],

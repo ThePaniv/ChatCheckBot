@@ -70,13 +70,16 @@ def test_set_frequency_reraises_other_client_errors():
         db.set_frequency(42, 60, 1752777300)
 
 
-def test_cancel_checks_removes_schedule_and_pending():
+def test_cancel_checks_marks_inactive_and_drops_schedule():
     db, users_table, _ = _make_db()
     assert db.cancel_checks(42) is True
     kwargs = users_table.update_item.call_args.kwargs
     assert kwargs["Key"] == {"user_id": "42"}
-    assert "REMOVE next_check_at" in kwargs["UpdateExpression"]
-    assert "pending_check" in kwargs["UpdateExpression"]
+    expr = kwargs["UpdateExpression"]
+    assert "REMOVE next_check_at" in expr
+    assert "pending_check" in expr
+    assert "active = :inactive" in expr
+    assert kwargs["ExpressionAttributeValues"] == {":inactive": False}
     # Only cancels when a schedule exists (conditional), so a no-op returns False.
     assert kwargs["ConditionExpression"] is not None
 

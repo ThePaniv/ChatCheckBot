@@ -1051,6 +1051,104 @@
           "version": "13.2.0-29079983887"
         }
       }
+    },
+    "panel-12": {
+      "kind": "Panel",
+      "spec": {
+        "data": {
+          "kind": "QueryGroup",
+          "spec": {
+            "queries": [
+              {
+                "kind": "PanelQuery",
+                "spec": {
+                  "hidden": false,
+                  "query": {
+                    "datasource": {
+                      "name": "efsgrjl4ycpvkd"
+                    },
+                    "group": "yesoreyeram-infinity-datasource",
+                    "kind": "DataQuery",
+                    "spec": {
+                      "columns": [
+                        {
+                          "selector": "cancelled_users",
+                          "text": "cancelled_users",
+                          "type": "number"
+                        }
+                      ],
+                      "format": "table",
+                      "parser": "backend",
+                      "root_selector": "",
+                      "source": "url",
+                      "type": "json",
+                      "url": "https://colozauq4va56unxug5yorssdu0umiov.lambda-url.eu-central-1.on.aws/?view=summary",
+                      "url_options": {
+                        "data": "",
+                        "method": "GET"
+                      }
+                    },
+                    "version": "v0"
+                  },
+                  "refId": "A"
+                }
+              }
+            ],
+            "queryOptions": {},
+            "transformations": []
+          }
+        },
+        "description": "",
+        "id": 12,
+        "links": [],
+        "title": "Cancelled",
+        "vizConfig": {
+          "group": "stat",
+          "kind": "VizConfig",
+          "spec": {
+            "fieldConfig": {
+              "defaults": {
+                "color": {
+                  "fixedColor": "orange",
+                  "mode": "fixed"
+                },
+                "thresholds": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green",
+                      "value": 0
+                    },
+                    {
+                      "color": "red",
+                      "value": 80
+                    }
+                  ]
+                }
+              },
+              "overrides": []
+            },
+            "options": {
+              "colorMode": "value",
+              "graphMode": "none",
+              "justifyMode": "auto",
+              "orientation": "auto",
+              "percentChangeColorMode": "standard",
+              "reduceOptions": {
+                "calcs": [
+                  "lastNotNull"
+                ],
+                "fields": "/^cancelled_users$/",
+                "values": false
+              },
+              "showPercentChange": false,
+              "textMode": "value",
+              "wideLayout": true
+            }
+          },
+          "version": "13.2.0-29079983887"
+        }
+      }
     }
   },
   "layout": {
@@ -1073,7 +1171,7 @@
                         "name": "panel-2"
                       },
                       "height": 4,
-                      "width": 6,
+                      "width": 5,
                       "x": 0,
                       "y": 0
                     }
@@ -1086,8 +1184,8 @@
                         "name": "panel-3"
                       },
                       "height": 4,
-                      "width": 6,
-                      "x": 6,
+                      "width": 5,
+                      "x": 5,
                       "y": 0
                     }
                   },
@@ -1099,8 +1197,21 @@
                         "name": "panel-4"
                       },
                       "height": 4,
-                      "width": 6,
-                      "x": 12,
+                      "width": 5,
+                      "x": 15,
+                      "y": 0
+                    }
+                  },
+                  {
+                    "kind": "GridLayoutItem",
+                    "spec": {
+                      "element": {
+                        "kind": "ElementReference",
+                        "name": "panel-12"
+                      },
+                      "height": 4,
+                      "width": 5,
+                      "x": 10,
                       "y": 0
                     }
                   },
@@ -1112,8 +1223,8 @@
                         "name": "panel-5"
                       },
                       "height": 4,
-                      "width": 6,
-                      "x": 18,
+                      "width": 4,
+                      "x": 20,
                       "y": 0
                     }
                   }

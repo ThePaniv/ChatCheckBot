@@ -62,15 +62,17 @@ class WaterBotDB:
             raise
 
     def cancel_checks(self, user_id):
-        # Stop reminders without deleting the user: drop the schedule so the
-        # tick never picks them up again, and clear any open prompt. Conditioned
+        # Stop reminders AND mark the user inactive without deleting them: drop
+        # the schedule so the tick skips them, clear any open prompt, and flip
+        # active to False so dashboards don't count them as active. Conditioned
         # on an existing schedule, so a no-op (unregistered, or already
-        # cancelled) returns False. Resume by picking a frequency again, which
-        # rewrites next_check_at.
+        # cancelled) returns False. Resume by picking a frequency — set_frequency
+        # re-activates and reschedules.
         try:
             self.users_table.update_item(
                 Key={"user_id": str(user_id)},
-                UpdateExpression="REMOVE next_check_at, pending_check",
+                UpdateExpression="SET active = :inactive REMOVE next_check_at, pending_check",
+                ExpressionAttributeValues={":inactive": False},
                 ConditionExpression=Attr("next_check_at").exists(),
             )
             return True
