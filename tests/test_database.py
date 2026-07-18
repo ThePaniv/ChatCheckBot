@@ -70,9 +70,12 @@ def test_set_frequency_reraises_other_client_errors():
         db.set_frequency(42, 60, 1752777300)
 
 
-def test_cancel_checks_marks_inactive_and_drops_schedule():
-    db, users_table, _ = _make_db()
+def test_cancel_checks_closes_open_prompt_as_ignored_then_cancels():
+    db, users_table, logs_table = _make_db()
+    # The user still had an unanswered prompt open when they cancelled.
+    users_table.update_item.return_value = {"Attributes": {"pending_check": "999"}}
     assert db.cancel_checks(42) is True
+
     kwargs = users_table.update_item.call_args.kwargs
     assert kwargs["Key"] == {"user_id": "42"}
     expr = kwargs["UpdateExpression"]
@@ -82,6 +85,19 @@ def test_cancel_checks_marks_inactive_and_drops_schedule():
     assert kwargs["ExpressionAttributeValues"] == {":inactive": False}
     # Only cancels when a schedule exists (conditional), so a no-op returns False.
     assert kwargs["ConditionExpression"] is not None
+    assert kwargs["ReturnValues"] == "ALL_OLD"
+    # The still-open prompt is closed out as ignored, keyed by its old id.
+    item = logs_table.put_item.call_args.kwargs["Item"]
+    assert item["checked_at"] == "999"
+    assert item["status"] == "ignored"
+
+
+def test_cancel_checks_without_open_prompt_logs_nothing():
+    db, users_table, logs_table = _make_db()
+    # Latest check already answered (or none) → no pending_check to close.
+    users_table.update_item.return_value = {"Attributes": {}}
+    assert db.cancel_checks(42) is True
+    logs_table.put_item.assert_not_called()
 
 
 def test_cancel_checks_returns_false_when_nothing_scheduled():

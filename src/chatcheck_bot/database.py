@@ -69,17 +69,26 @@ class WaterBotDB:
         # cancelled) returns False. Resume by picking a frequency — set_frequency
         # re-activates and reschedules.
         try:
-            self.users_table.update_item(
+            response = self.users_table.update_item(
                 Key={"user_id": str(user_id)},
                 UpdateExpression="SET active = :inactive REMOVE next_check_at, pending_check",
                 ExpressionAttributeValues={":inactive": False},
                 ConditionExpression=Attr("next_check_at").exists(),
+                ReturnValues="ALL_OLD",
             )
-            return True
         except ClientError as err:
             if err.response["Error"]["Code"] == "ConditionalCheckFailedException":
                 return False
             raise
+        # If the latest prompt was still open (unanswered), close it out as
+        # ignored — the same bookkeeping the tick does when a prompt is
+        # superseded. The atomic update above already cleared pending_check and
+        # returned its old value, so a late answer to it is rejected and can't
+        # double-log. If it was already answered, pending_check is absent here.
+        pending = response.get("Attributes", {}).get("pending_check")
+        if pending:
+            self.log_check(user_id, str(pending), "ignored")
+        return True
 
     @staticmethod
     def _scan_all(table, **scan_kwargs):
