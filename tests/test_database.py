@@ -70,6 +70,34 @@ def test_set_frequency_reraises_other_client_errors():
         db.set_frequency(42, 60, 1752777300)
 
 
+def test_cancel_checks_removes_schedule_and_pending():
+    db, users_table, _ = _make_db()
+    assert db.cancel_checks(42) is True
+    kwargs = users_table.update_item.call_args.kwargs
+    assert kwargs["Key"] == {"user_id": "42"}
+    assert "REMOVE next_check_at" in kwargs["UpdateExpression"]
+    assert "pending_check" in kwargs["UpdateExpression"]
+    # Only cancels when a schedule exists (conditional), so a no-op returns False.
+    assert kwargs["ConditionExpression"] is not None
+
+
+def test_cancel_checks_returns_false_when_nothing_scheduled():
+    db, users_table, _ = _make_db()
+    users_table.update_item.side_effect = ClientError(
+        {"Error": {"Code": "ConditionalCheckFailedException"}}, "UpdateItem"
+    )
+    assert db.cancel_checks(999) is False
+
+
+def test_cancel_checks_reraises_other_client_errors():
+    db, users_table, _ = _make_db()
+    users_table.update_item.side_effect = ClientError(
+        {"Error": {"Code": "ProvisionedThroughputExceededException"}}, "UpdateItem"
+    )
+    with pytest.raises(ClientError):
+        db.cancel_checks(42)
+
+
 def test_get_due_users_paginates_until_no_last_key():
     db, users_table, _ = _make_db()
     users_table.scan.side_effect = [

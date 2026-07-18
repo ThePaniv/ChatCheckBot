@@ -70,12 +70,13 @@ PROMPT_TEXT = "Ти вже випив(-ла) достатньо води? 💧"
 
 # Persistent options panel shown once onboarding completes. Tapping a button
 # sends its label as a normal text message, routed below to the matching
-# handler. The label doubles as the routing key, so it lives in one constant
+# handler. Each label doubles as its routing key, so it lives in one constant
 # referenced by both the markup and the MessageHandler.
 BTN_FREQUENCY = "⏰ Змінити частоту"
+BTN_CANCEL = "🛑 Скасувати нагадування"
 
 MAIN_MENU = ReplyKeyboardMarkup(
-    [[KeyboardButton(BTN_FREQUENCY)]],
+    [[KeyboardButton(BTN_FREQUENCY), KeyboardButton(BTN_CANCEL)]],
     resize_keyboard=True,
     is_persistent=True,
 )
@@ -143,6 +144,16 @@ async def frequency_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
 
 
+async def cancel_checks_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    # Stop reminders without unregistering: cancel_checks drops the schedule so
+    # the tick skips this user. They resume by picking a frequency again. The
+    # persistent panel stays put, so "Змінити частоту" is one tap away.
+    if db.cancel_checks(update.effective_user.id):
+        await update.message.reply_text("Нагадування скасовано. Щоб відновити, обери частоту. 🛑")
+    else:
+        await update.message.reply_text("Активних нагадувань немає. Обери частоту, щоб почати. 💧")
+
+
 async def handle_frequency_choice(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
@@ -200,6 +211,7 @@ app.add_handler(CommandHandler("start", start))
 app.add_handler(CommandHandler("frequency", frequency_command))
 app.add_handler(MessageHandler(filters.CONTACT, handle_contact))
 app.add_handler(MessageHandler(filters.Text([BTN_FREQUENCY]), frequency_command))
+app.add_handler(MessageHandler(filters.Text([BTN_CANCEL]), cancel_checks_command))
 app.add_handler(CallbackQueryHandler(handle_frequency_choice, pattern=r"^freq:\d+$"))
 app.add_handler(CallbackQueryHandler(handle_water_response, pattern=r"^water:(yes|no):\d+$"))
 

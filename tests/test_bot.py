@@ -24,26 +24,38 @@ def test_answer_callback_data_within_telegram_limit():
     assert len("water:no:9999999999") <= 64
 
 
-def test_main_menu_panel_is_persistent_with_frequency_button():
+def test_main_menu_panel_is_persistent_with_both_buttons():
     menu = bot.MAIN_MENU
     assert menu.is_persistent is True
     assert menu.resize_keyboard is True
     labels = [btn.text for row in menu.keyboard for btn in row]
-    assert labels == [bot.BTN_FREQUENCY]
+    assert labels == [bot.BTN_FREQUENCY, bot.BTN_CANCEL]
+
+
+def _routed_message_handlers(callback):
+    return [
+        h
+        for h in bot.app.handlers[0]
+        if isinstance(h, bot.MessageHandler) and h.callback is callback
+    ]
 
 
 def test_menu_button_routes_to_frequency_command():
     # The reply-keyboard button sends its label as text; that text must reach
     # frequency_command and nothing else.
-    routed = [
-        h
-        for h in bot.app.handlers[0]
-        if isinstance(h, bot.MessageHandler) and h.callback is bot.frequency_command
-    ]
+    routed = _routed_message_handlers(bot.frequency_command)
     assert len(routed) == 1
     match = routed[0].filters
     assert match.filter(mock.Mock(text=bot.BTN_FREQUENCY))
-    assert not match.filter(mock.Mock(text="будь-який інший текст"))
+    assert not match.filter(mock.Mock(text=bot.BTN_CANCEL))
+
+
+def test_cancel_button_routes_to_cancel_command():
+    routed = _routed_message_handlers(bot.cancel_checks_command)
+    assert len(routed) == 1
+    match = routed[0].filters
+    assert match.filter(mock.Mock(text=bot.BTN_CANCEL))
+    assert not match.filter(mock.Mock(text=bot.BTN_FREQUENCY))
 
 
 def test_frequency_choice_sends_first_check_immediately(monkeypatch):
@@ -96,6 +108,37 @@ def test_frequency_choice_unregistered_user_is_not_prompted(monkeypatch):
 
     context.bot.send_message.assert_not_awaited()
     fake_db.mark_sent.assert_not_called()
+
+
+def test_cancel_command_stops_reminders(monkeypatch):
+    fake_db = mock.Mock()
+    fake_db.cancel_checks.return_value = True
+    monkeypatch.setattr(bot, "db", fake_db)
+
+    update = mock.Mock()
+    update.effective_user.id = 42
+    update.message.reply_text = mock.AsyncMock()
+
+    asyncio.run(bot.cancel_checks_command(update, None))
+
+    fake_db.cancel_checks.assert_called_once_with(42)
+    update.message.reply_text.assert_awaited_once()
+    assert "скасовано" in update.message.reply_text.await_args.args[0].lower()
+
+
+def test_cancel_command_when_nothing_scheduled(monkeypatch):
+    fake_db = mock.Mock()
+    fake_db.cancel_checks.return_value = False
+    monkeypatch.setattr(bot, "db", fake_db)
+
+    update = mock.Mock()
+    update.effective_user.id = 42
+    update.message.reply_text = mock.AsyncMock()
+
+    asyncio.run(bot.cancel_checks_command(update, None))
+
+    update.message.reply_text.assert_awaited_once()
+    assert "немає" in update.message.reply_text.await_args.args[0].lower()
 
 
 @pytest.fixture

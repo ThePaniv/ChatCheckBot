@@ -61,6 +61,24 @@ class WaterBotDB:
                 return False
             raise
 
+    def cancel_checks(self, user_id):
+        # Stop reminders without deleting the user: drop the schedule so the
+        # tick never picks them up again, and clear any open prompt. Conditioned
+        # on an existing schedule, so a no-op (unregistered, or already
+        # cancelled) returns False. Resume by picking a frequency again, which
+        # rewrites next_check_at.
+        try:
+            self.users_table.update_item(
+                Key={"user_id": str(user_id)},
+                UpdateExpression="REMOVE next_check_at, pending_check",
+                ConditionExpression=Attr("next_check_at").exists(),
+            )
+            return True
+        except ClientError as err:
+            if err.response["Error"]["Code"] == "ConditionalCheckFailedException":
+                return False
+            raise
+
     @staticmethod
     def _scan_all(table, **scan_kwargs):
         # Page through an entire table (or a filtered subset), following
