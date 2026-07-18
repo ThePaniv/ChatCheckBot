@@ -17,13 +17,24 @@ def _make_db():
 
 def test_register_user_stores_stringified_id_and_active_flag():
     db, users_table, _ = _make_db()
-    db.register_user(user_id=42, chat_id="42", phone="+380000000000", first_name="Ann")
+    db.register_user(
+        user_id=42, chat_id="42", phone="+380000000000", first_name="Ann", username="ann_k"
+    )
     item = users_table.put_item.call_args.kwargs["Item"]
     assert item["user_id"] == "42"
     assert item["chat_id"] == 42
     assert item["active"] is True
+    assert item["username"] == "ann_k"
     # Not scheduled until the user picks a frequency, so they aren't prompted yet.
     assert "next_check_at" not in item
+
+
+def test_register_user_omits_username_when_absent():
+    db, users_table, _ = _make_db()
+    # Telegram users aren't required to have a username; don't write an empty one.
+    db.register_user(user_id=42, chat_id="42", phone="+380000000000", first_name="Ann")
+    item = users_table.put_item.call_args.kwargs["Item"]
+    assert "username" not in item
 
 
 def test_set_frequency_records_schedule_and_clears_pending():

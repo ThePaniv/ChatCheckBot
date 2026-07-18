@@ -102,6 +102,7 @@ async def handle_contact(update: Update, context: ContextTypes.DEFAULT_TYPE):
         chat_id=update.message.chat_id,
         phone=contact.phone_number,
         first_name=contact.first_name or sender.first_name or "",
+        username=sender.username,
     )
     await update.message.reply_text("Реєстрацію завершено! ✅", reply_markup=MAIN_MENU)
     await update.message.reply_text("Як часто тобі нагадувати?", reply_markup=_frequency_keyboard())

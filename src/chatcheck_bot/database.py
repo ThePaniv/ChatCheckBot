@@ -16,19 +16,21 @@ class WaterBotDB:
         self.users_table = dynamodb.Table(os.getenv("USERS_TABLE", "WaterBotUsers"))
         self.logs_table = dynamodb.Table(os.getenv("LOGS_TABLE", "WaterBotLogs"))
 
-    def register_user(self, user_id, chat_id, phone, first_name):
+    def register_user(self, user_id, chat_id, phone, first_name, username=None):
         # Registered but not yet scheduled: next_check_at is written only once
         # the user picks a frequency, so an un-onboarded user is never prompted.
-        self.users_table.put_item(
-            Item={
-                "user_id": str(user_id),
-                "chat_id": int(chat_id),
-                "phone_number": phone,
-                "first_name": first_name,
-                "registered_at": _now_iso(),
-                "active": True,
-            }
-        )
+        # username is optional — Telegram users aren't required to have one.
+        item = {
+            "user_id": str(user_id),
+            "chat_id": int(chat_id),
+            "phone_number": phone,
+            "first_name": first_name,
+            "registered_at": _now_iso(),
+            "active": True,
+        }
+        if username:
+            item["username"] = username
+        self.users_table.put_item(Item=item)
 
     def set_frequency(self, user_id, frequency_seconds, next_check_at):
         # Records the cadence, schedules the next prompt, reactivates the user
