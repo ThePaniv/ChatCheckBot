@@ -90,6 +90,20 @@ def _frequency_keyboard() -> InlineKeyboardMarkup:
     )
 
 
+def _water_keyboard(checked_at: str) -> InlineKeyboardMarkup:
+    # checked_at (epoch seconds) rides in the callback data so a late tap is
+    # logged against the right prompt. Shared by the tick and the first-check
+    # sent immediately on frequency selection.
+    return InlineKeyboardMarkup(
+        [
+            [
+                InlineKeyboardButton("Так 👍", callback_data=f"water:yes:{checked_at}"),
+                InlineKeyboardButton("Ні 👎", callback_data=f"water:no:{checked_at}"),
+            ]
+        ]
+    )
+
+
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     contact_keyboard = ReplyKeyboardMarkup(
         [[KeyboardButton(text="Поділитися контактом", request_contact=True)]],
@@ -137,17 +151,30 @@ async def handle_frequency_choice(update: Update, context: ContextTypes.DEFAULT_
     if choice is None:
         return  # stale/retired button; the tap is already acknowledged
     _, phrase = choice
-    # Make the first check due now: the next tick (≤60s away) sends the first
-    # prompt, then advances next_check_at by the frequency — so the cadence is
-    # counted from the first check, not from the moment of selection.
-    next_check_at = int(time.time())
-    if db.set_frequency(query.from_user.id, seconds, next_check_at):
-        await query.edit_message_text(f"Готово! Тепер нагадуватиму {phrase}. 💧")
-    else:
-        # No registered row to update (never shared a contact) — guide them.
+    now = int(time.time())
+    # Record the cadence. next_check_at = now is a due-now fallback: if the
+    # immediate send below fails for a non-block reason, the tick still prompts
+    # within a minute. set_frequency returns False for someone unregistered.
+    if not db.set_frequency(query.from_user.id, seconds, now):
         await query.edit_message_text(
             "Спершу надішли /start і поділися контактом, щоб я міг тобі писати. 🙏"
         )
+        return
+    await query.edit_message_text(f"Готово! Тепер нагадуватиму {phrase}. 💧")
+    # Send the FIRST check right now instead of waiting for the next tick, then
+    # advance next_check_at by one interval so the cadence is counted from this
+    # first prompt. mark_sent also sets pending_check, so the answer is accepted.
+    checked_at = str(now)
+    try:
+        await context.bot.send_message(
+            chat_id=update.effective_chat.id,
+            text=PROMPT_TEXT,
+            reply_markup=_water_keyboard(checked_at),
+        )
+    except Forbidden:
+        db.deactivate_user(query.from_user.id)
+        return
+    db.mark_sent(query.from_user.id, checked_at, now + seconds)
 
 
 async def handle_water_response(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -236,16 +263,10 @@ async def _tick():
         if pending:
             db.log_check(user_id, str(pending), "ignored")
         checked_at = str(now)
-        keyboard = InlineKeyboardMarkup(
-            [
-                [
-                    InlineKeyboardButton("Так 👍", callback_data=f"water:yes:{checked_at}"),
-                    InlineKeyboardButton("Ні 👎", callback_data=f"water:no:{checked_at}"),
-                ]
-            ]
-        )
         try:
-            await app.bot.send_message(chat_id=chat_id, text=PROMPT_TEXT, reply_markup=keyboard)
+            await app.bot.send_message(
+                chat_id=chat_id, text=PROMPT_TEXT, reply_markup=_water_keyboard(checked_at)
+            )
             # Advance the schedule only after a confirmed send, inside the same
             # try: if this write fails the user stays due and is retried next
             # tick (at worst a duplicate), never silently dropped mid-batch.

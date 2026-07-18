@@ -46,10 +46,9 @@ def test_menu_button_routes_to_frequency_command():
     assert not match.filter(mock.Mock(text="будь-який інший текст"))
 
 
-def test_frequency_choice_schedules_first_check_immediately(monkeypatch):
-    # Picking a frequency makes the first check due NOW (the next tick prompts
-    # it), with the cadence counted from that first check — not one full
-    # interval after the moment of selection.
+def test_frequency_choice_sends_first_check_immediately(monkeypatch):
+    # Picking a frequency prompts the user right away (not on the next tick),
+    # and schedules the next check one interval after this first prompt.
     fake_db = mock.Mock()
     fake_db.set_frequency.return_value = True
     monkeypatch.setattr(bot, "db", fake_db)
@@ -61,11 +60,42 @@ def test_frequency_choice_schedules_first_check_immediately(monkeypatch):
     query.answer = mock.AsyncMock()
     query.edit_message_text = mock.AsyncMock()
     update = mock.Mock(callback_query=query)
+    update.effective_chat.id = 555
+    context = mock.Mock()
+    context.bot.send_message = mock.AsyncMock()
 
-    asyncio.run(bot.handle_frequency_choice(update, None))
+    asyncio.run(bot.handle_frequency_choice(update, context))
 
-    # next_check_at == now (1_000_000), NOT now + 10800.
-    fake_db.set_frequency.assert_called_once_with(42, 10800, 1_000_000)
+    # First prompt sent now, to the user's chat, carrying the water keyboard.
+    context.bot.send_message.assert_awaited_once()
+    kwargs = context.bot.send_message.await_args.kwargs
+    assert kwargs["chat_id"] == 555
+    datas = [b.callback_data for row in kwargs["reply_markup"].inline_keyboard for b in row]
+    assert datas == ["water:yes:1000000", "water:no:1000000"]
+    # Next check scheduled one interval (10800s) after this first prompt.
+    fake_db.mark_sent.assert_called_once_with(42, "1000000", 1_000_000 + 10800)
+
+
+def test_frequency_choice_unregistered_user_is_not_prompted(monkeypatch):
+    # No registered row (never shared a contact) → guidance message, no prompt.
+    fake_db = mock.Mock()
+    fake_db.set_frequency.return_value = False
+    monkeypatch.setattr(bot, "db", fake_db)
+    monkeypatch.setattr(bot.time, "time", lambda: 1_000_000)
+
+    query = mock.Mock()
+    query.data = "freq:60"
+    query.from_user.id = 7
+    query.answer = mock.AsyncMock()
+    query.edit_message_text = mock.AsyncMock()
+    update = mock.Mock(callback_query=query)
+    context = mock.Mock()
+    context.bot.send_message = mock.AsyncMock()
+
+    asyncio.run(bot.handle_frequency_choice(update, context))
+
+    context.bot.send_message.assert_not_awaited()
+    fake_db.mark_sent.assert_not_called()
 
 
 @pytest.fixture
